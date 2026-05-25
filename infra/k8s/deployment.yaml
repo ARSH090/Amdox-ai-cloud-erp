@@ -1,0 +1,43 @@
+# infra/k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amdox-api-deployment
+  labels:
+    app: amdox-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: amdox-api
+  template:
+    metadata:
+      labels:
+        app: amdox-api
+    spec:
+      containers:
+      - name: api-container
+        image: us-east1-docker.pkg.dev/amdox-production/amdox-registry/api-monolith:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: amdox-db-secrets
+              key: database-url
+        - name: REDIS_HOST
+          value: "amdox-redis-service"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: amdox-api-service
+spec:
+  selector:
+    app: amdox-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer

@@ -1,0 +1,589 @@
+<!-- AMDOX ERP | Enterprise Cloud Suite -->
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AMDOX ERP // Enterprise Cloud Suite</title>
+    <!-- Supabase CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #030712;
+            color: #dde2f3;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-panel {
+            background: rgba(11, 15, 25, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .glow-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px 0 rgba(79, 70, 229, 0.3);
+        }
+        .ticker-scroll {
+            animation: scroll 30s linear infinite;
+        }
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ai-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#0b0f19, #0b0f19) padding-box,
+                        linear-gradient(to right, #4f46e5, #4edea3) border-box;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#1a202c",
+                        "inverse-primary": "#4d44e3",
+                        "on-primary": "#1d00a5",
+                        "secondary-fixed": "#6ffbbe",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "primary-container": "#4f46e5",
+                        "secondary": "#4edea3",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-highest": "#2f3542",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#2f3542",
+                        "on-background": "#dde2f3",
+                        "background": "#0e131f",
+                        "on-surface": "#dde2f3",
+                        "tertiary-container": "#4b4dd8",
+                        "tertiary": "#c0c1ff",
+                        "surface-dim": "#0e131f",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#2b303d",
+                        "surface-container-low": "#161c28",
+                        "surface-tint": "#c3c0ff",
+                        "surface-bright": "#343946",
+                        "on-surface-variant": "#c7c4d8",
+                        "on-tertiary-container": "#d9d8ff",
+                        "surface": "#0e131f",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "outline": "#918fa1",
+                        "secondary-container": "#00a572",
+                        "outline-variant": "#464555",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "tertiary-fixed": "#e1e0ff",
+                        "on-primary-container": "#dad7ff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "primary": "#c3c0ff",
+                        "on-secondary-fixed": "#002113",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-tertiary-fixed": "#07006c",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#e2dfff",
+                        "on-primary-fixed": "#0f0069",
+                        "inverse-surface": "#dde2f3",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#00311f",
+                        "surface-container-high": "#242a36",
+                        "surface-container-lowest": "#080e1a",
+                        "on-tertiary": "#1000a9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "2xl": "64px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "unit": "4px",
+                        "margin": "32px",
+                        "max-width": "1440px",
+                        "gutter": "24px",
+                        "xl": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "status-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "status-mono": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-body-md overflow-x-hidden">
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-white/5 h-16">
+        <div class="flex justify-between items-center w-full px-margin max-w-max-width mx-auto h-full">
+            <div class="flex items-center gap-md">
+                <div class="font-headline-md text-headline-md font-bold text-primary tracking-tight cursor-pointer" onclick="window.location.reload()">AMDOX ERP</div>
+                <!-- Database Connection Status Badge -->
+                <span id="db-status-badge" class="hidden sm:inline-block font-status-mono text-[9px] px-sm py-0.5 rounded border cursor-pointer hover:bg-white/5 transition-all select-none">
+                    DB LOADING...
+                </span>
+            </div>
+            <div class="hidden md:flex gap-lg items-center">
+                <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#modules">Modules</a>
+                <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#pricing">Pricing</a>
+                <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#case-studies">Case Studies</a>
+                <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#docs">Solutions</a>
+            </div>
+            <div class="flex items-center gap-md">
+                <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:bg-white/5 p-xs rounded transition-all" onclick="openDbConfigModal()">settings_ethernet</span>
+                <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:bg-white/5 p-xs rounded transition-all">language</span>
+                <button id="nav-login-btn" onclick="initiateLogin()" class="bg-primary-container text-on-primary-container px-lg py-sm rounded font-label-caps text-label-caps font-bold hover:opacity-90 active:scale-95 transition-all text-center">
+                    Secure Login
+                </button>
+            </div>
+        </div>
+    </nav>
+    <main class="pt-16">
+        <!-- Hero Section -->
+        <section class="relative min-h-[870px] flex items-center px-margin max-w-max-width mx-auto grid grid-cols-12 gap-gutter py-2xl">
+            <div class="col-span-12 lg:col-span-8 z-10">
+                <div class="mb-md">
+                    <span class="font-status-mono text-status-mono text-secondary bg-secondary/10 px-md py-xs rounded-full inline-block border border-secondary/20">
+                        [SYS_STAT // ACTIVE]
+                    </span>
+                </div>
+                <h1 class="font-display-lg text-display-lg text-on-surface mb-lg max-w-3xl leading-[1.1]">
+                    Orchestrating <span class="text-primary italic">Global Enterprise</span> Intelligence with AI Precision.
+                </h1>
+                <p class="font-body-lg text-body-lg text-on-surface-variant mb-xl max-w-xl">
+                    The autonomous backbone for high-performance corporations. Real-time observability, predictive logistics, and cognitive financial processing in one unified canvas.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-md">
+                    <button onclick="initiateLogin()" class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-xl py-md rounded-lg font-bold hover:translate-y-[-2px] transition-all duration-300 shadow-lg shadow-primary-container/20 text-center">
+                        Request Enterprise Demo
+                    </button>
+                    <a href="#modules" class="border border-white/10 text-on-surface font-label-caps text-label-caps px-xl py-md rounded-lg font-bold hover:bg-white/5 transition-all duration-300 text-center flex items-center justify-center">
+                        Explore Modules
+                    </a>
+                </div>
+            </div>
+            <!-- Hero Decorative Graphic -->
+            <div class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-20 pointer-events-none">
+                <div class="w-full h-full rounded-full bg-gradient-to-br from-primary via-secondary to-transparent blur-3xl"></div>
+            </div>
+        </section>
+        
+        <!-- Live Metrics Ticker -->
+        <div class="w-full border-y border-white/5 bg-surface-container-lowest overflow-hidden py-md">
+            <div class="flex ticker-scroll whitespace-nowrap gap-xl items-center">
+                <!-- Ticker Content Repeat for seamless loop -->
+                <div class="flex gap-xl items-center">
+                    <span class="font-status-mono text-status-mono text-on-surface-variant flex items-center gap-xs">
+                        <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span> P95 API LATENCY &lt; <span class="text-secondary">300MS</span>
+                    </span>
+                    <span class="text-white/10">|</span>
+                    <span class="font-status-mono text-status-mono text-on-surface-variant">SLA: <span class="text-primary">99.9% UPTIME</span></span>
+                    <span class="text-white/10">|</span>
+                    <span class="font-status-mono text-status-mono text-on-surface-variant">ACTIVE TENANTS: <span class="text-on-surface">4,208</span></span>
+                    <span class="text-white/10">|</span>
+                    <span class="font-status-mono text-status-mono text-on-surface-variant">THROUGHPUT: <span class="text-secondary">1.2B REQ/DAY</span></span>
+                </div>
+                <div class="flex gap-xl items-center">
+                    <span class="font-status-mono text-status-mono text-on-surface-variant flex items-center gap-xs">
+                        <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span> P95 API LATENCY &lt; <span class="text-secondary">300MS</span>
+                    </span>
+                    <span class="text-white/10">|</span>
+                    <span class="font-status-mono text-status-mono text-on-surface-variant">SLA: <span class="text-primary">99.9% UPTIME</span></span>
+                    <span class="text-white/10">|</span>
+                    <span class="font-status-mono text-status-mono text-on-surface-variant">ACTIVE TENANTS: <span class="text-on-surface">4,208</span></span>
+                    <span class="text-white/10">|</span>
+                    <span class="font-status-mono text-status-mono text-on-surface-variant">THROUGHPUT: <span class="text-secondary">1.2B REQ/DAY</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Module Matrix -->
+        <section id="modules" class="px-margin max-w-max-width mx-auto py-2xl">
+            <div class="mb-xl flex justify-between items-end">
+                <div>
+                    <span class="font-label-caps text-label-caps text-primary mb-xs block">CORE CAPABILITIES</span>
+                    <h2 class="font-headline-lg text-headline-lg text-on-surface">Integrated Module Ecosystem</h2>
+                </div>
+                <div class="font-status-mono text-status-mono text-on-surface-variant">
+                    LOAD_TIME: 42ms
+                </div>
+            </div>
+            <div class="grid grid-cols-12 gap-gutter items-start">
+                <!-- Finance Module (Large/Active) -->
+                <div class="col-span-12 lg:col-span-8 glass-panel p-lg rounded-xl glow-hover transition-all duration-300 relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-lg">
+                        <div class="flex items-center gap-md">
+                            <div class="w-12 h-12 rounded bg-primary/10 flex items-center justify-center border border-primary/20">
+                                <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+                            </div>
+                            <div>
+                                <h3 class="font-headline-md text-headline-md text-on-surface">Advanced Finance</h3>
+                                <p class="font-status-mono text-status-mono text-secondary">PREDICTIVE_CASHFLOW: ON</p>
+                            </div>
+                        </div>
+                        <button onclick="initiateLogin()" class="flex"><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">arrow_outward</span></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-lg mb-lg">
+                        <div class="p-md bg-surface-container-lowest border border-white/5 rounded-lg">
+                            <span class="font-label-caps text-label-caps text-on-surface-variant block mb-sm">GLOBAL CONSOLIDATION</span>
+                            <div class="font-headline-md text-headline-md text-on-surface">$2.4B <span class="text-secondary text-sm">↑ 12%</span></div>
+                        </div>
+                        <div class="p-md bg-surface-container-lowest border border-white/5 rounded-lg">
+                            <span class="font-label-caps text-label-caps text-on-surface-variant block mb-sm">TAX COMPLIANCE</span>
+                            <div class="font-headline-md text-headline-md text-on-surface">100% <span class="text-primary text-sm">SECURED</span></div>
+                        </div>
+                    </div>
+                    <!-- Technical Preview Drawer -->
+                    <div class="ai-border p-md rounded-lg">
+                        <div class="flex items-center gap-sm mb-sm">
+                            <span class="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
+                            <span class="font-label-caps text-label-caps text-secondary uppercase">AI Engine Output</span>
+                        </div>
+                        <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                            "Anomaly detected in APAC subsidiary VAT filings. Auto-reconciling 4,200 transactions against latest regional regulations. Projected impact: +$1.2M recoverable credits."
+                        </p>
+                    </div>
+                    <!-- Subtle BG Image Prompt -->
+                    <img class="absolute bottom-0 right-0 w-1/2 opacity-5 pointer-events-none translate-y-1/4" alt="Data visualization dashboard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAig4kB1uJtlWjeuK6MP6esKLjiHczc1hxCzwEPNL7SpzEegLLsiJwZh44Ti4n_oJMXxkxEPioXDLoKT4j-1v3KBkBytM0m8CHRg9SXGZV0mCllZYhTThc9ndPopdw3wKxEaJmcGwDlCeH2n4dWUv3l6kSsD2kkKe8RhqCZh8-c8oknzvnM8az8nnX_96r6584wN1iN67_ctwy4-pcBSyzi3I0huIlbCRsp4nHLXA44Bw91X4WJplbIA_FZbyU2KlcvJKK_Uc1-uoW2"/>
+                </div>
+                <!-- HR Module -->
+                <div onclick="initiateLogin()" class="col-span-12 md:col-span-6 lg:col-span-4 glass-panel p-lg rounded-xl glow-hover transition-all duration-300 group cursor-pointer h-full">
+                    <div class="w-10 h-10 rounded bg-tertiary/10 flex items-center justify-center border border-tertiary/20 mb-md">
+                        <span class="material-symbols-outlined text-tertiary">groups</span>
+                    </div>
+                    <h3 class="font-headline-md text-headline-md text-on-surface mb-sm">Human Capital</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant mb-lg">
+                        Global workforce orchestration with automated payroll and talent acquisition intelligence.
+                    </p>
+                    <div class="flex flex-wrap gap-xs">
+                        <span class="bg-surface-container-highest px-sm py-xs font-status-mono text-status-mono rounded">PAYROLL_v4</span>
+                        <span class="bg-surface-container-highest px-sm py-xs font-status-mono text-status-mono rounded">LMS_SYNC</span>
+                    </div>
+                </div>
+                <!-- Supply Chain Module -->
+                <div onclick="initiateLogin()" class="col-span-12 md:col-span-6 lg:col-span-4 glass-panel p-lg rounded-xl glow-hover transition-all duration-300 group cursor-pointer h-full mt-gutter md:mt-0">
+                    <div class="w-10 h-10 rounded bg-secondary/10 flex items-center justify-center border border-secondary/20 mb-md">
+                        <span class="material-symbols-outlined text-secondary">inventory_2</span>
+                    </div>
+                    <h3 class="font-headline-md text-headline-md text-on-surface mb-sm">Supply Chain</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant mb-lg">
+                        End-to-end logistics visibility with predictive inventory management and automated procurement.
+                    </p>
+                    <div class="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
+                        <div class="bg-secondary h-full w-3/4 rounded-full"></div>
+                    </div>
+                    <div class="mt-sm flex justify-between font-status-mono text-status-mono text-on-surface-variant">
+                        <span>NODE_OPTIMIZATION</span>
+                        <span>75%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Case Studies Grid -->
+        <section id="case-studies" class="bg-surface-container-lowest py-2xl">
+            <div class="px-margin max-w-max-width mx-auto">
+                <div class="mb-xl">
+                    <span class="font-label-caps text-label-caps text-primary mb-xs block">PROVEN RESULTS</span>
+                    <h2 class="font-headline-lg text-headline-lg text-on-surface">Global Enterprise Impact</h2>
+                </div>
+                <div class="space-y-sm">
+                    <!-- Case Study Row 1 -->
+                    <div onclick="initiateLogin()" class="group border-b border-white/5 py-lg flex flex-col md:flex-row md:items-center justify-between gap-md hover:bg-white/[0.02] px-md transition-colors cursor-pointer">
+                        <div class="flex items-center gap-xl flex-1">
+                            <span class="font-status-mono text-status-mono text-on-surface-variant w-16">01 //</span>
+                            <div>
+                                <h4 class="font-body-lg text-body-lg font-bold text-on-surface">Fortune 500 Retailer</h4>
+                                <p class="font-body-md text-body-md text-on-surface-variant">Supply Chain Digitalization</p>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <span class="font-headline-md text-headline-md text-secondary">INVENTORY OVERHEAD REDUCED BY 22%</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="font-label-caps text-label-caps px-md py-sm border border-white/10 rounded-full">SAP_MIGRATION</span>
+                            <span class="font-label-caps text-label-caps px-md py-sm border border-white/10 rounded-full">AI_NODES</span>
+                            <span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+                    <!-- Case Study Row 2 -->
+                    <div onclick="initiateLogin()" class="group border-b border-white/5 py-lg flex flex-col md:flex-row md:items-center justify-between gap-md hover:bg-white/[0.02] px-md transition-colors cursor-pointer">
+                        <div class="flex items-center gap-xl flex-1">
+                            <span class="font-status-mono text-status-mono text-on-surface-variant w-16">02 //</span>
+                            <div>
+                                <h4 class="font-body-lg text-body-lg font-bold text-on-surface">NexGen Logistics</h4>
+                                <p class="font-body-md text-body-md text-on-surface-variant">Automated Fulfillment Hub</p>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <span class="font-headline-md text-headline-md text-primary">OPERATIONAL EFFICIENCY +34%</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="font-label-caps text-label-caps px-md py-sm border border-white/10 rounded-full">ROBOTIC_API</span>
+                            <span class="font-label-caps text-label-caps px-md py-sm border border-white/10 rounded-full">CLOUD_NATIVE</span>
+                            <span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+                    <!-- Case Study Row 3 -->
+                    <div onclick="initiateLogin()" class="group border-b border-white/5 py-lg flex flex-col md:flex-row md:items-center justify-between gap-md hover:bg-white/[0.02] px-md transition-colors cursor-pointer">
+                        <div class="flex items-center gap-xl flex-1">
+                            <span class="font-status-mono text-status-mono text-on-surface-variant w-16">03 //</span>
+                            <div>
+                                <h4 class="font-body-lg text-body-lg font-bold text-on-surface">Global Pharma Corp</h4>
+                                <p class="font-body-md text-body-md text-on-surface-variant">Compliance &amp; Risk Shield</p>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <span class="font-headline-md text-headline-md text-tertiary">AUDIT READINESS TIME -60%</span>
+                        </div>
+                        <div class="flex items-center gap-sm">
+                            <span class="font-label-caps text-label-caps px-md py-sm border border-white/10 rounded-full">SOC2_AUTO</span>
+                            <span class="font-label-caps text-label-caps px-md py-sm border border-white/10 rounded-full">DATA_LAKE</span>
+                            <span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section id="docs" class="px-margin max-w-max-width mx-auto py-2xl text-center">
+            <div class="glass-panel p-2xl rounded-2xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <h2 class="font-display-lg text-display-lg text-on-surface mb-lg">Ready to Scale the <span class="text-secondary">Unattainable?</span></h2>
+                    <p class="font-body-lg text-body-lg text-on-surface-variant mb-xl max-w-2xl mx-auto">
+                        Join 4,000+ global enterprises that have upgraded their nervous system to AMDOX. Let's build your unified operational future today.
+                    </p>
+                    <div class="flex justify-center gap-md">
+                        <button onclick="initiateLogin()" class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-xl py-md rounded-lg font-bold hover:translate-y-[-2px] transition-all text-center shadow-lg">
+                            Talk to an Architect
+                        </button>
+                        <button onclick="initiateLogin()" class="border border-white/10 text-on-surface font-label-caps text-label-caps px-xl py-md rounded-lg font-bold hover:bg-white/5 transition-all text-center">
+                            View Documentation
+                        </button>
+                    </div>
+                </div>
+                <!-- Animated background element -->
+                <div class="absolute inset-0 opacity-10 pointer-events-none">
+                    <div class="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-primary to-transparent"></div>
+                    <div class="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-secondary to-transparent"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-xl px-margin border-t border-white/5 mt-auto bg-surface-container-lowest">
+        <div class="max-w-max-width mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-lg mb-xl">
+                <div>
+                    <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">AMDOX ENTERPRISE</div>
+                    <div class="font-status-mono text-status-mono text-outline uppercase">© 2026 AMDOX ENTERPRISE. ENCRYPTED END-TO-END.</div>
+                </div>
+                <div class="flex flex-wrap gap-lg">
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">Security Protocol</a>
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">Privacy</a>
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">Terms</a>
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">API Docs</a>
+                </div>
+            </div>
+            <div class="flex justify-between items-center pt-lg border-t border-white/5">
+                <div class="flex gap-md items-center">
+                    <a href="terminal.html" class="hover:text-primary"><span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">terminal</span></a>
+                    <a href="dashboard.html" class="hover:text-primary"><span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">database</span></a>
+                    <a href="dashboard.html" class="hover:text-primary"><span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">lan</span></a>
+                </div>
+                <div class="font-status-mono text-status-mono text-secondary">
+                    VER: 4.2.0-STABLE // [REGION: GLOBAL-NORTH]
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Supabase Configuration Modal (Shared UI) -->
+    <div id="db-config-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-panel p-lg rounded-2xl w-full max-w-md mx-4 relative overflow-hidden ai-border">
+            <h3 class="font-headline-md text-headline-md text-primary mb-md">Supabase Integration Panel</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mb-lg">Insert your Supabase Project Endpoint and Anon Key to activate real-time DB pipelines.</p>
+            <form onsubmit="event.preventDefault(); saveDbConfig();" class="space-y-md">
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">SUPABASE_URL</label>
+                    <input type="url" id="config-db-url" required placeholder="https://your-project-id.supabase.co" class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">SUPABASE_ANON_KEY</label>
+                    <input type="password" id="config-db-key" required placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div class="flex justify-between items-center pt-md border-t border-white/5 mt-lg">
+                    <button type="button" onclick="clearDbConfig()" class="text-error font-label-caps text-label-caps hover:underline">Reset to Sandbox</button>
+                    <div class="flex gap-md">
+                        <button type="button" onclick="closeDbConfigModal()" class="border border-white/10 text-on-surface font-label-caps text-label-caps px-md py-sm rounded hover:bg-white/5">Cancel</button>
+                        <button type="submit" class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-md py-sm rounded font-bold hover:opacity-90">Connect DB</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-panel p-lg rounded-2xl w-full max-w-md mx-4 relative overflow-hidden ai-border">
+            <h3 class="font-headline-md text-headline-md text-primary mb-md">Secure Core Login</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mb-lg">Access the cognitive administrative core. Authenticate using database credentials.</p>
+            <form onsubmit="event.preventDefault(); submitLogin();" class="space-y-md">
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">EMAIL ADDRESS</label>
+                    <input type="email" id="login-email" required placeholder="executive@amdox.com" class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">PASSWORD</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div class="flex justify-end gap-md pt-md border-t border-white/5 mt-lg">
+                    <button type="button" onclick="closeLoginModal()" class="border border-white/10 text-on-surface font-label-caps text-label-caps px-md py-sm rounded hover:bg-white/5">Cancel</button>
+                    <button type="submit" class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-md py-sm rounded font-bold hover:opacity-90">Authenticate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="supabase-client.js"></script>
+    <script>
+        // Update connection status UI badge
+        function updateDbBadge() {
+            const badge = document.getElementById('db-status-badge');
+            if (window.amdoxDb) {
+                if (window.amdoxDb.isMock()) {
+                    badge.innerText = "[DB: SANDBOX MOCK]";
+                    badge.className = "hidden sm:inline-block font-status-mono text-[9px] px-sm py-0.5 rounded border border-yellow-500/30 text-yellow-500 bg-yellow-500/10 cursor-pointer select-none";
+                } else {
+                    badge.innerText = "[DB: SUPABASE LIVE]";
+                    badge.className = "hidden sm:inline-block font-status-mono text-[9px] px-sm py-0.5 rounded border border-secondary/30 text-secondary bg-secondary/10 cursor-pointer select-none";
+                }
+            }
+        }
+        
+        // Initial setup on load
+        window.addEventListener('load', () => {
+            updateDbBadge();
+            
+            // Auto login state check to change Secure Login button
+            if (window.amdoxDb) {
+                window.amdoxDb.getSession().then(session => {
+                    const btn = document.getElementById('nav-login-btn');
+                    if (session) {
+                        btn.innerText = "Enter Dashboard";
+                        btn.onclick = () => window.location.href = 'dashboard.html';
+                    }
+                });
+            }
+        });
+
+        // Config Modal helper methods
+        const dbConfigModal = document.getElementById('db-config-modal');
+        
+        function openDbConfigModal() {
+            if (window.amdoxDb) {
+                const creds = window.amdoxDb.getCredentials();
+                document.getElementById('config-db-url').value = creds.url || '';
+                document.getElementById('config-db-key').value = creds.key || '';
+            }
+            dbConfigModal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeDbConfigModal() {
+            dbConfigModal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function saveDbConfig() {
+            const url = document.getElementById('config-db-url').value;
+            const key = document.getElementById('config-db-key').value;
+            if (window.amdoxDb) {
+                window.amdoxDb.setCredentials(url, key);
+            }
+            closeDbConfigModal();
+        }
+
+        function clearDbConfig() {
+            if (window.amdoxDb) {
+                window.amdoxDb.clearCredentials();
+            }
+            closeDbConfigModal();
+        }
+
+        // Login Modal helper methods
+        const loginModal = document.getElementById('login-modal');
+
+        function initiateLogin() {
+            if (window.amdoxDb) {
+                window.amdoxDb.getSession().then(session => {
+                    if (session) {
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        loginModal.classList.remove('opacity-0', 'pointer-events-none');
+                    }
+                });
+            }
+        }
+
+        function closeLoginModal() {
+            loginModal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        async function submitLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (window.amdoxDb) {
+                const { data, error } = await window.amdoxDb.login(email, password);
+                if (error) {
+                    alert("Authentication failure: " + error.message);
+                } else {
+                    closeLoginModal();
+                    window.location.href = 'dashboard.html';
+                }
+            }
+        }
+
+        // Simple micro-interaction for the module cards
+        document.querySelectorAll('.glow-hover').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // Close modals on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDbConfigModal();
+                closeLoginModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+name: AMDOX ERP // DevOps CI Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      # Dynamic PostgreSQL 17 virtualization container service
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: amdox_db
+          POSTGRES_USER: amdox_admin
+          POSTGRES_PASSWORD: amdox_secure_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Dynamic Redis 8 virtualization container service
+      redis:
+        image: redis:8.0-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install Dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Verify Code Linting & Formatting
+      run: pnpm run lint
+
+    - name: Verify strict TypeScript Path Aliasing
+      run: pnpm tsc --noEmit
+
+    - name: Execute Prisma Schema Generate Hooks
+      run: pnpm --filter api run prisma:generate
+
+    - name: Run Integration Tests (Tenant Isolation Boundaries Check)
+      env:
+        DATABASE_URL: "postgresql://amdox_admin:amdox_secure_password@localhost:5432/amdox_db?schema=public"
+        REDIS_URL: "redis://localhost:6379"
+      run: pnpm run test
+
+    - name: Run Snyk/Trivy SAST Security Vulnerability Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'table'
+        severity: 'HIGH,CRITICAL'

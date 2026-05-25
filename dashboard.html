@@ -1,0 +1,724 @@
+<!-- Executive Command Center | AMDOX ERP -->
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AMDOX ERP // EXECUTIVE DASHBOARD</title>
+    <!-- Supabase CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #030712;
+            color: #dde2f3;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: #0B0F19;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.3);
+            border-color: rgba(79, 70, 229, 0.4);
+        }
+        .ai-border {
+            border: 1px solid;
+            border-image-source: linear-gradient(90deg, #4f46e5, #4edea3);
+            border-image-slice: 1;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2f3542;
+            border-radius: 10px;
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-status {
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#1a202c",
+                        "inverse-primary": "#4d44e3",
+                        "on-primary": "#1d00a5",
+                        "secondary-fixed": "#6ffbbe",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "primary-container": "#4f46e5",
+                        "secondary": "#4edea3",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-highest": "#2f3542",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#2f3542",
+                        "on-background": "#dde2f3",
+                        "background": "#0e131f",
+                        "on-surface": "#dde2f3",
+                        "tertiary-container": "#4b4dd8",
+                        "tertiary": "#c0c1ff",
+                        "surface-dim": "#0e131f",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#2b303d",
+                        "surface-container-low": "#161c28",
+                        "surface-tint": "#c3c0ff",
+                        "surface-bright": "#343946",
+                        "on-surface-variant": "#c7c4d8",
+                        "on-tertiary-container": "#d9d8ff",
+                        "surface": "#0e131f",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "outline": "#918fa1",
+                        "secondary-container": "#00a572",
+                        "outline-variant": "#464555",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "tertiary-fixed": "#e1e0ff",
+                        "on-primary-container": "#dad7ff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "primary": "#c3c0ff",
+                        "on-secondary-fixed": "#002113",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-tertiary-fixed": "#07006c",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#e2dfff",
+                        "on-primary-fixed": "#0f0069",
+                        "inverse-surface": "#dde2f3",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#00311f",
+                        "surface-container-high": "#242a36",
+                        "surface-container-lowest": "#080e1a",
+                        "on-tertiary": "#1000a9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "2xl": "64px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "unit": "4px",
+                        "margin": "32px",
+                        "max-width": "1440px",
+                        "gutter": "24px",
+                        "xl": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "status-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "status-mono": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="flex min-h-screen opacity-0 transition-opacity duration-300" id="app-body">
+    <!-- SideNavBar (Shared Component) -->
+    <aside class="hidden md:flex flex-col p-md h-screen fixed left-0 top-0 h-full w-72 bg-surface-container-lowest border-r border-white/5 z-50">
+        <div class="mb-xl px-sm cursor-pointer" onclick="window.location.href='index.html'">
+            <h2 class="font-label-caps text-label-caps text-primary mb-xs">AMDOX ENTERPRISE</h2>
+            <div class="flex items-center gap-xs">
+                <span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                <h1 class="font-headline-md text-headline-md">[SYS_STAT // ACTIVE]</h1>
+            </div>
+            <p class="font-status-mono text-status-mono text-outline opacity-70">Admin Terminal v4.2</p>
+        </div>
+        <nav class="flex-1 space-y-unit">
+            <!-- Active Tab: Dashboard -->
+            <a class="flex items-center gap-md p-md bg-primary-container text-on-primary-container font-bold rounded-xl transition-all duration-300" href="dashboard.html">
+                <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                <span class="font-status-mono text-status-mono">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="#lead-ingestion">
+                <span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+                <span class="font-status-mono text-status-mono">Leads</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="index.html#case-studies">
+                <span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+                <span class="font-status-mono text-status-mono">Projects</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="#velocity-card">
+                <span class="material-symbols-outlined" data-icon="insights">insights</span>
+                <span class="font-status-mono text-status-mono">Analytics</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="terminal.html">
+                <span class="material-symbols-outlined" data-icon="settings">settings</span>
+                <span class="font-status-mono text-status-mono">System Config</span>
+            </a>
+        </nav>
+        <div class="mt-auto space-y-unit pt-md border-t border-white/5">
+            <button id="btn-new-project" class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary font-label-caps text-label-caps py-md rounded-xl hover:opacity-90 active:scale-95 transition-all mb-md">
+                <span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                New Project
+            </button>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all" href="index.html">
+                <span class="material-symbols-outlined" data-icon="help">help</span>
+                <span class="font-status-mono text-status-mono">Support</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all" href="terminal.html">
+                <span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+                <span class="font-status-mono text-status-mono">Logs</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Canvas -->
+    <main class="flex-1 md:ml-72 flex flex-col min-h-screen bg-background relative overflow-hidden">
+        <!-- Header Top Bar -->
+        <header class="h-16 flex justify-between items-center px-margin border-b border-white/5 bg-background/80 backdrop-blur-md sticky top-0 z-40">
+            <div class="flex items-center gap-md">
+                <h2 class="font-label-caps text-label-caps text-outline">/admin/dashboard/overview</h2>
+                <span id="db-status-badge" class="font-status-mono text-[9px] px-sm py-0.5 rounded border select-none">
+                    DB LOADING...
+                </span>
+            </div>
+            <div class="flex items-center gap-lg">
+                <div class="hidden lg:flex items-center gap-md bg-surface-container-low border border-white/5 px-md py-xs rounded-full">
+                    <span class="material-symbols-outlined text-outline" data-icon="search">search</span>
+                    <input id="global-search" class="bg-transparent border-none focus:ring-0 text-body-md font-body-md text-on-surface-variant placeholder:text-outline/50 w-64" placeholder="Filter leads by company..." type="text"/>
+                </div>
+                <div class="flex items-center gap-md">
+                    <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" onclick="alert('Secure SSH handshake refreshed.')" data-icon="sync">sync</span>
+                    <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" onclick="logout()" data-icon="logout">logout</span>
+                    <div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden border border-primary/20 cursor-pointer">
+                        <img id="user-profile-img" alt="Executive User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxxYt6RZO53wVYTEQ1Tb20gjrRhZGorrNI7ZiMt12Lj0moFkST5w7lfihsE3tvFep_2tg51UWBOKzFaNR4cx9X_srBVHB-j_BcmnV1RRpDIabnQ97lLKW6XoKrtTyL6qvUPDEyU88D9XgjiSHADYWVNTfu5qkQrXBd9gZ9yZSpD7Hh0wtfBJN-3RkRuXS6WSMSv04SLaJXdo_-eWGNmhY6JCdJfWCZ9TvUThB_gfQuKuAo_GEoToxd6Ea6S5WZ2dfzgsJ6HC99F9zM"/>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content Grid -->
+        <div class="p-margin max-w-max-width mx-auto w-full space-y-xl">
+            <!-- Real-Time Activity Monitors (Bento Grid) -->
+            <section class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+                <!-- Transaction Velocity (Line Chart) -->
+                <div id="velocity-card" class="glass-card col-span-1 md:col-span-8 p-lg flex flex-col min-h-[320px]">
+                    <div class="flex justify-between items-start mb-xl">
+                        <div>
+                            <h3 class="font-headline-md text-headline-md text-primary">Transaction Velocity</h3>
+                            <p class="font-status-mono text-status-mono text-outline">Real-time throughput metrics (TPS)</p>
+                        </div>
+                        <div class="flex items-center gap-xs px-sm py-xs bg-secondary/10 border border-secondary/20 rounded">
+                            <span class="material-symbols-outlined text-secondary text-[14px]" data-icon="trending_up">trending_up</span>
+                            <span id="velocity-trend" class="font-status-mono text-status-mono text-secondary">+12.4%</span>
+                        </div>
+                    </div>
+                    <!-- Chart Graphic with Dynamic Bars -->
+                    <div class="flex-1 flex items-end gap-xs overflow-hidden pt-md" id="chart-container">
+                        <div class="bg-primary/20 w-full h-[30%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/30 w-full h-[45%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/40 w-full h-[40%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/50 w-full h-[60%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/60 w-full h-[55%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/70 w-full h-[80%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/80 w-full h-[75%] rounded-t-sm relative transition-all duration-1000">
+                            <div id="tps-indicator" class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-bright px-xs py-[2px] rounded text-[10px] font-mono text-primary border border-primary/30 whitespace-nowrap">984 tps</div>
+                        </div>
+                        <div class="bg-primary/90 w-full h-[95%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/70 w-full h-[70%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/50 w-full h-[50%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/30 w-full h-[40%] rounded-t-sm transition-all duration-1000"></div>
+                        <div class="bg-primary/20 w-full h-[30%] rounded-t-sm transition-all duration-1000"></div>
+                    </div>
+                </div>
+
+                <!-- Asset Allocation (Donut Chart) -->
+                <div class="glass-card col-span-1 md:col-span-4 p-lg flex flex-col items-center justify-center">
+                    <div class="w-full text-left mb-lg">
+                        <h3 class="font-headline-md text-headline-md text-primary">Asset Allocation</h3>
+                        <p class="font-status-mono text-status-mono text-outline">Portfolio dispersion index</p>
+                    </div>
+                    <div class="relative w-48 h-48 flex items-center justify-center mb-lg">
+                        <!-- Custom CSS Circle Ring -->
+                        <div class="absolute inset-0 rounded-full border-[12px] border-surface-container-highest"></div>
+                        <div class="absolute inset-0 rounded-full border-[12px] border-primary border-t-transparent border-r-transparent transform -rotate-45"></div>
+                        <div class="absolute inset-0 rounded-full border-[12px] border-secondary border-b-transparent border-l-transparent transform rotate-12"></div>
+                        <div class="text-center">
+                            <span class="font-display-lg text-display-lg text-on-surface">84</span>
+                            <p class="font-label-caps text-label-caps text-outline">SCORE</p>
+                        </div>
+                    </div>
+                    <div class="w-full space-y-xs">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-xs">
+                                <span class="w-2 h-2 bg-primary rounded-full"></span>
+                                <span class="font-body-md text-body-md text-on-surface-variant">Core Infrastructure</span>
+                            </div>
+                            <span class="font-status-mono text-status-mono">62%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-xs">
+                                <span class="w-2 h-2 bg-secondary rounded-full"></span>
+                                <span class="font-body-md text-body-md text-on-surface-variant">AI Liquidity</span>
+                            </div>
+                            <span class="font-status-mono text-status-mono">28%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Load (Heatmap) -->
+                <div class="glass-card col-span-1 md:col-span-12 p-lg">
+                    <div class="flex justify-between items-end mb-lg">
+                        <div>
+                            <h3 class="font-headline-md text-headline-md text-primary">Server Load Distribution</h3>
+                            <p class="font-status-mono text-status-mono text-outline">Global node compute saturation per quadrant</p>
+                        </div>
+                        <div class="flex gap-xs" id="heatmap-legend">
+                            <div class="w-3 h-3 bg-surface-container-highest rounded-sm"></div>
+                            <div class="w-3 h-3 bg-primary/20 rounded-sm"></div>
+                            <div class="w-3 h-3 bg-primary/40 rounded-sm"></div>
+                            <div class="w-3 h-3 bg-primary/60 rounded-sm"></div>
+                            <div class="w-3 h-3 bg-primary/80 rounded-sm"></div>
+                            <div class="w-3 h-3 bg-primary rounded-sm"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-12 md:grid-cols-24 gap-xs h-24" id="heatmap-grid">
+                        <!-- Heatmap Grid Cells (Simulated via JS) -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Active Database Projects Grid -->
+            <section class="space-y-md">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-headline-md text-headline-md text-primary">Active Corporate Projects</h3>
+                    <span class="font-status-mono text-outline text-[11px]">Source: PostgreSQL /projects</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-md" id="projects-grid">
+                    <!-- Project cards load dynamically from Supabase/LocalStorage -->
+                    <div class="glass-card p-md rounded-xl animate-pulse flex flex-col justify-center items-center h-28">
+                        <span class="font-status-mono text-outline">Loading project nodes...</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lead Ingestion Board -->
+            <section id="lead-ingestion" class="glass-card overflow-hidden">
+                <div class="p-lg border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-md">
+                    <div>
+                        <h3 class="font-headline-md text-headline-md text-on-surface">Lead Ingestion Board</h3>
+                        <p class="font-status-mono text-status-mono text-outline">Live stream from /contact partition</p>
+                    </div>
+                    <div class="flex gap-md">
+                        <div id="btn-filter" class="flex items-center gap-xs px-md py-sm bg-surface-container-highest rounded border border-white/5 text-on-surface-variant cursor-pointer hover:bg-surface-bright transition-all">
+                            <span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+                            <span class="font-label-caps text-label-caps" id="filter-label">Filter Signals (All)</span>
+                        </div>
+                        <div id="btn-export" class="flex items-center gap-xs px-md py-sm bg-primary/10 border border-primary/20 rounded text-primary cursor-pointer hover:bg-primary/20 transition-all">
+                            <span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+                            <span class="font-label-caps text-label-caps">Export XLS</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse" id="leads-table">
+                        <thead>
+                            <tr class="border-b border-white/5 bg-surface-container-lowest">
+                                <th class="p-lg font-label-caps text-label-caps text-outline uppercase">Source</th>
+                                <th class="p-lg font-label-caps text-label-caps text-outline uppercase">Company</th>
+                                <th class="p-lg font-label-caps text-label-caps text-outline uppercase">Estimated Value</th>
+                                <th class="p-lg font-label-caps text-label-caps text-outline uppercase">Status</th>
+                                <th class="p-lg font-label-caps text-label-caps text-outline uppercase">Partition</th>
+                                <th class="p-lg"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="lead-table-body">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State (Hidden by Default) -->
+                <div class="hidden p-2xl flex flex-col items-center justify-center text-center py-20" id="empty-state">
+                    <span class="material-symbols-outlined text-outline text-display-lg mb-md opacity-20" data-icon="database_off">database_off</span>
+                    <h4 class="font-headline-md text-headline-md text-outline">No records found in active partition.</h4>
+                    <p class="font-body-md text-body-md text-outline/50 mt-xs">Verify your encryption keys and partition index filters.</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer (Shared Component) -->
+        <footer class="w-full py-xl px-margin border-t border-white/5 mt-auto bg-surface-container-lowest">
+            <div class="max-w-max-width mx-auto flex flex-col md:flex-row justify-between items-center gap-lg">
+                <div class="flex flex-col gap-xs">
+                    <span class="font-label-caps text-label-caps text-on-surface-variant">AMDOX ENTERPRISE</span>
+                    <p class="font-status-mono text-status-mono text-outline/50">© 2026 AMDOX ENTERPRISE. ENCRYPTED END-TO-END.</p>
+                </div>
+                <div class="flex gap-xl">
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">Security Protocol</a>
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">Privacy</a>
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">Terms</a>
+                    <a class="font-status-mono text-status-mono text-outline hover:text-primary transition-colors" href="#">API Docs</a>
+                </div>
+            </div>
+        </footer>
+        <!-- AI Focus Background Glows -->
+        <div class="absolute -top-[20%] -right-[10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div class="absolute -bottom-[10%] -left-[5%] w-[400px] h-[400px] bg-secondary/5 blur-[100px] rounded-full pointer-events-none"></div>
+    </main>
+
+    <!-- Notification Toast (Hidden by default) -->
+    <div id="toast" class="fixed bottom-6 right-6 p-md rounded-lg glass-card ai-border text-on-surface flex items-center gap-md opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-50">
+        <span class="material-symbols-outlined text-secondary" id="toast-icon">info</span>
+        <div class="font-body-md text-body-md" id="toast-message">Message here</div>
+    </div>
+
+    <!-- Modal Form (Hidden by default) -->
+    <div id="modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-card p-lg rounded-2xl w-full max-w-md mx-4 relative overflow-hidden ai-border">
+            <h3 class="font-headline-md text-headline-md text-primary mb-md">Initialize New Project</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mb-lg">Allocate node capacity and setup directory mapping for the core tenant partition.</p>
+            <form id="new-project-form" onsubmit="event.preventDefault(); submitProjectForm();" class="space-y-md">
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">Project Identifier Code</label>
+                    <input type="text" id="project-code" required placeholder="e.g. PROJ_OMEGA" class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">Project Name</label>
+                    <input type="text" id="project-name" required placeholder="e.g. Omega Consolidation Node" class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">Budget Allocation (USD)</label>
+                    <input type="number" id="project-budget" required placeholder="e.g. 50000" class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-outline mb-xs">Timeline Start Date</label>
+                    <input type="date" id="project-start-date" required class="w-full bg-surface-container-lowest border border-white/10 rounded px-md py-sm text-body-md focus:border-primary focus:ring-0 text-on-surface"/>
+                </div>
+                <div class="flex justify-end gap-md pt-md border-t border-white/5 mt-lg">
+                    <button type="button" onclick="closeModal()" class="border border-white/10 text-on-surface font-label-caps text-label-caps px-md py-sm rounded hover:bg-white/5">Cancel</button>
+                    <button type="submit" class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-md py-sm rounded font-bold hover:opacity-90">Provision Node</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="supabase-client.js"></script>
+    <script>
+        // Authentication session guard
+        async function checkAuth() {
+            if (window.amdoxDb) {
+                const session = await window.amdoxDb.getSession();
+                if (!session) {
+                    alert("Unauthorized access. Redirecting to auth core.");
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('app-body').classList.remove('opacity-0');
+                    if (session.user) {
+                        document.getElementById('user-profile-img').src = session.user.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAxxYt6RZO53wVYTEQ1Tb20gjrRhZGorrNI7ZiMt12Lj0moFkST5w7lfihsE3tvFep_2tg51UWBOKzFaNR4cx9X_srBVHB-j_BcmnV1RRpDIabnQ97lLKW6XoKrtTyL6qvUPDEyU88D9XgjiSHADYWVNTfu5qkQrXBd9gZ9yZSpD7Hh0wtfBJN-3RkRuXS6WSMSv04SLaJXdo_-eWGNmhY6JCdJfWCZ9TvUThB_gfQuKuAo_GEoToxd6Ea6S5WZ2dfzgsJ6HC99F9zM';
+                    }
+                    updateDbStatus();
+                    loadLeads();
+                    loadProjects();
+                }
+            }
+        }
+
+        async function logout() {
+            if (window.amdoxDb) {
+                await window.amdoxDb.logout();
+                window.location.href = 'index.html';
+            }
+        }
+
+        function updateDbStatus() {
+            const badge = document.getElementById('db-status-badge');
+            if (window.amdoxDb) {
+                if (window.amdoxDb.isMock()) {
+                    badge.innerText = "[DB: SANDBOX MOCK]";
+                    badge.className = "font-status-mono text-[9px] px-sm py-0.5 rounded border border-yellow-500/30 text-yellow-500 bg-yellow-500/10 select-none";
+                } else {
+                    badge.innerText = "[DB: SUPABASE LIVE]";
+                    badge.className = "font-status-mono text-[9px] px-sm py-0.5 rounded border border-secondary/30 text-secondary bg-secondary/10 select-none";
+                }
+            }
+        }
+
+        // Global variables for loaded leads data
+        let loadedLeads = [];
+
+        // Dynamic Leads loading
+        async function loadLeads() {
+            if (window.amdoxDb) {
+                try {
+                    const leads = await window.amdoxDb.getLeads();
+                    loadedLeads = leads;
+                    renderLeads(leads);
+                } catch (e) {
+                    console.error("Failed to query database leads", e);
+                    showToast("Database fetch error.", "error");
+                }
+            }
+        }
+
+        function renderLeads(leads) {
+            const tbody = document.getElementById('lead-table-body');
+            tbody.innerHTML = '';
+
+            if (leads.length === 0) {
+                toggleEmptyState(true);
+                return;
+            }
+
+            toggleEmptyState(false);
+            leads.forEach(lead => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors lead-row";
+                tr.setAttribute('data-status', lead.status);
+                tr.setAttribute('data-company', lead.company.toLowerCase());
+
+                const icon = lead.source === 'Inbound Web' ? 'public' : (lead.source === 'API Partner' ? 'hub' : 'alternate_email');
+                const statusClass = lead.status === 'new' ? 'bg-primary/10 border-primary/30 text-primary animate-pulse' : 
+                                    (lead.status === 'qualified' ? 'bg-secondary/10 border-secondary/30 text-secondary' : 'bg-surface-container-highest border-white/10 text-on-surface-variant');
+
+                tr.innerHTML = `
+                    <td class="p-lg">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-outline" data-icon="${icon}">${icon}</span>
+                            <span class="font-body-md text-body-md">${lead.source}</span>
+                        </div>
+                    </td>
+                    <td class="p-lg font-body-md text-body-md font-semibold">${lead.company}</td>
+                    <td class="p-lg font-status-mono text-status-mono text-secondary">$${lead.estimated_value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td class="p-lg">
+                        <span class="px-sm py-[2px] rounded-full border text-status-mono text-[10px] uppercase inline-block ${statusClass}">${lead.status}</span>
+                    </td>
+                    <td class="p-lg font-status-mono text-status-mono text-outline/50">${lead.partition}</td>
+                    <td class="p-lg text-right">
+                        <span class="material-symbols-outlined text-outline cursor-pointer hover:text-on-surface" onclick="alert('Lead detailed metadata encrypted.')" data-icon="more_vert">more_vert</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Dynamic Projects loading
+        async function loadProjects() {
+            if (window.amdoxDb) {
+                try {
+                    const projects = await window.amdoxDb.getProjects();
+                    renderProjects(projects);
+                } catch (e) {
+                    console.error("Failed to query database projects", e);
+                }
+            }
+        }
+
+        function renderProjects(projects) {
+            const grid = document.getElementById('projects-grid');
+            grid.innerHTML = '';
+
+            if (projects.length === 0) {
+                grid.innerHTML = `
+                    <div class="glass-card col-span-3 p-md rounded-xl flex flex-col justify-center items-center h-28 border-dashed border border-white/10">
+                        <span class="font-status-mono text-outline">No active project nodes provisioned.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            projects.forEach(proj => {
+                const percentage = Math.round((proj.spent / (proj.budget || 1)) * 100);
+                const statusColor = proj.status === 'active' ? 'text-secondary' : 'text-primary';
+
+                const card = document.createElement('div');
+                card.className = "glass-card p-lg rounded-xl flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-sm">
+                            <span class="font-status-mono text-outline text-[11px]">${proj.code}</span>
+                            <span class="font-status-mono text-[10px] uppercase ${statusColor} bg-white/5 border border-white/10 px-sm py-[2px] rounded-full">${proj.status}</span>
+                        </div>
+                        <h4 class="font-body-lg text-body-lg font-bold text-on-surface mb-xs">${proj.name}</h4>
+                        <p class="font-body-md text-body-md text-outline/70 mb-md line-clamp-1">${proj.description || 'No description provided.'}</p>
+                    </div>
+                    <div class="space-y-sm">
+                        <div class="flex justify-between font-status-mono text-status-mono text-[11px] text-outline">
+                            <span>BUDGET: $${proj.budget.toLocaleString()}</span>
+                            <span>SPENT: ${percentage}%</span>
+                        </div>
+                        <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-primary h-full rounded-full" style="width: ${Math.min(percentage, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Project Form submission
+        async function submitProjectForm() {
+            const code = document.getElementById('project-code').value;
+            const name = document.getElementById('project-name').value;
+            const budget = parseFloat(document.getElementById('project-budget').value);
+            const startDate = document.getElementById('project-start-date').value;
+
+            if (window.amdoxDb) {
+                showToast('Provisioning project configuration node...', 'info');
+                try {
+                    await window.amdoxDb.insertProject({
+                        code,
+                        name,
+                        budget,
+                        start_date: startDate,
+                        spent: 0,
+                        status: 'planning'
+                    });
+                    closeModal();
+                    showToast('Project database configuration secure.', 'success');
+                    loadProjects();
+                } catch (e) {
+                    showToast('Failed to insert project node.', 'error');
+                }
+            }
+        }
+
+        // Initialize session check
+        checkAuth();
+
+        // Heatmap generation
+        const heatmap = document.getElementById('heatmap-grid');
+        for(let i=0; i<120; i++){
+            const div = document.createElement('div');
+            const opacity = [0.1, 0.2, 0.4, 0.6, 0.8, 1.0][Math.floor(Math.random() * 6)];
+            div.className = "rounded-xs transition-colors duration-1000";
+            div.style.backgroundColor = `rgba(195, 192, 255, ${opacity})`;
+            div.style.border = '1px solid rgba(255,255,255,0.02)';
+            heatmap.appendChild(div);
+        }
+
+        // Live updating Heatmap values periodically
+        setInterval(() => {
+            const cells = heatmap.querySelectorAll('div');
+            cells.forEach(cell => {
+                if (Math.random() > 0.7) {
+                    const opacity = [0.1, 0.2, 0.4, 0.6, 0.8, 1.0][Math.floor(Math.random() * 6)];
+                    cell.style.backgroundColor = `rgba(195, 192, 255, ${opacity})`;
+                }
+            });
+        }, 4000);
+
+        // Function to toggle empty state
+        function toggleEmptyState(isEmpty) {
+            const table = document.getElementById('leads-table');
+            const emptyState = document.getElementById('empty-state');
+            if (isEmpty) {
+                table.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                table.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        // Simulating chart velocity updates
+        setInterval(() => {
+            const chartBars = document.querySelectorAll('#chart-container > div:not(#tps-indicator)');
+            chartBars.forEach(bar => {
+                const randomHeight = Math.floor(Math.random() * 80) + 20;
+                bar.style.height = randomHeight + '%';
+            });
+            const tps = Math.floor(Math.random() * 400) + 800;
+            document.getElementById('tps-indicator').innerText = tps + ' tps';
+            const trend = (Math.random() * 6 + 9).toFixed(1);
+            document.getElementById('velocity-trend').innerText = '+' + trend + '%';
+        }, 3000);
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+
+            icon.innerText = type === 'success' ? 'check_circle' : (type === 'error' ? 'cancel' : 'info');
+            icon.className = `material-symbols-outlined ${type === 'success' ? 'text-secondary' : (type === 'error' ? 'text-error' : 'text-primary')}`;
+            msg.innerText = message;
+
+            toast.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Search feature
+        const searchInput = document.getElementById('global-search');
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const filtered = loadedLeads.filter(lead => lead.company.toLowerCase().includes(query));
+            renderLeads(filtered);
+        });
+
+        // Filter button cycler
+        const filters = ['all', 'new', 'qualified', 'contacted'];
+        let activeFilterIndex = 0;
+        document.getElementById('btn-filter').addEventListener('click', () => {
+            activeFilterIndex = (activeFilterIndex + 1) % filters.length;
+            const currentFilter = filters[activeFilterIndex];
+            document.getElementById('filter-label').innerText = `Filter Signals (${currentFilter.charAt(0).toUpperCase() + currentFilter.slice(1)})`;
+
+            const filtered = currentFilter === 'all' ? loadedLeads : loadedLeads.filter(lead => lead.status === currentFilter);
+            renderLeads(filtered);
+            showToast(`Filter: ${currentFilter.toUpperCase()}`, 'info');
+        });
+
+        // Export spreadsheet simulation
+        document.getElementById('btn-export').addEventListener('click', () => {
+            showToast('Generating encrypted spreadsheet pipeline...', 'info');
+            setTimeout(() => {
+                showToast('Spreadsheet downloaded. Decryption code sent to terminal.', 'success');
+            }, 1500);
+        });
+
+        // Modal triggers
+        const modal = document.getElementById('modal');
+        document.getElementById('btn-new-project').addEventListener('click', () => {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        });
+
+        function closeModal() {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        // Close modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>

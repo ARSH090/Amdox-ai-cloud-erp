@@ -1,0 +1,50 @@
+# ════════════════════════════════════════════════════════
+# AMDOX ERP // MONOREPO GITIGNORE
+# ════════════════════════════════════════════════════════
+
+# 1. Dependency Directories
+node_modules/
+jspm_packages/
+web_components/
+
+# 2. Build & Compilation Outputs
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# 3. Environment & Credentials
+.env
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
+.env.*.local
+*.env
+
+# 4. Diagnostic & Tooling Output
+graphify-out/
+amdox-erp-graph-map.zip
+
+# 5. IDE, Editors, and OS files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# 6. Local Database & Cache Volumes
+pgdata/
+redisdata/
+esdata/
+/apps/api/dist/
+/apps/api/prisma/migrations/

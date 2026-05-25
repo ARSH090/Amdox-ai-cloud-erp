@@ -1,0 +1,729 @@
+<!-- Secure Terminal Access | AMDOX ERP -->
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AMDOX ERP // SECURE TERMINAL ACCESS</title>
+    <!-- Supabase CDN Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #030712;
+            color: #dde2f3;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        .terminal-container {
+            background: #050811;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 30px rgba(79, 70, 229, 0.15);
+            position: relative;
+        }
+        .terminal-header {
+            background: #0b0f19;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .terminal-body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #02040a;
+            position: relative;
+        }
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 6px 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .terminal-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            box-shadow: none;
+            color: #4edea3;
+            caret-color: #4edea3;
+            width: 100%;
+        }
+        .terminal-input:focus {
+            box-shadow: none;
+            outline: none;
+            border: none;
+        }
+        .text-glow {
+            text-shadow: 0 0 5px rgba(78, 222, 163, 0.6);
+        }
+        .text-glow-primary {
+            text-shadow: 0 0 5px rgba(195, 192, 255, 0.6);
+        }
+        .glass-card {
+            background: #0B0F19;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.3s;
+        }
+        .ai-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#050811, #050811) padding-box,
+                        linear-gradient(to right, #4f46e5, #4edea3) border-box;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(79, 70, 229, 0.4);
+            border-radius: 4px;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#1a202c",
+                        "inverse-primary": "#4d44e3",
+                        "on-primary": "#1d00a5",
+                        "secondary-fixed": "#6ffbbe",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "primary-container": "#4f46e5",
+                        "secondary": "#4edea3",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-highest": "#2f3542",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#2f3542",
+                        "on-background": "#dde2f3",
+                        "background": "#0e131f",
+                        "on-surface": "#dde2f3",
+                        "tertiary-container": "#4b4dd8",
+                        "tertiary": "#c0c1ff",
+                        "surface-dim": "#0e131f",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#2b303d",
+                        "surface-container-low": "#161c28",
+                        "surface-tint": "#c3c0ff",
+                        "surface-bright": "#343946",
+                        "on-surface-variant": "#c7c4d8",
+                        "on-tertiary-container": "#d9d8ff",
+                        "surface": "#0e131f",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "outline": "#918fa1",
+                        "secondary-container": "#00a572",
+                        "outline-variant": "#464555",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "tertiary-fixed": "#e1e0ff",
+                        "on-primary-container": "#dad7ff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "primary": "#c3c0ff",
+                        "on-secondary-fixed": "#002113",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-tertiary-fixed": "#07006c",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#e2dfff",
+                        "on-primary-fixed": "#0f0069",
+                        "inverse-surface": "#dde2f3",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#00311f",
+                        "surface-container-high": "#242a36",
+                        "surface-container-lowest": "#080e1a",
+                        "on-tertiary": "#1000a9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "2xl": "64px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "unit": "4px",
+                        "margin": "32px",
+                        "max-width": "1440px",
+                        "gutter": "24px",
+                        "xl": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "status-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "status-mono": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="flex min-h-screen opacity-0 transition-opacity duration-300" id="app-body">
+    <!-- SideNavBar (Shared Component) -->
+    <aside class="hidden md:flex flex-col p-md h-screen fixed left-0 top-0 h-full w-72 bg-surface-container-lowest border-r border-white/5 z-50">
+        <div class="mb-xl px-sm cursor-pointer" onclick="window.location.href='index.html'">
+            <h2 class="font-label-caps text-label-caps text-primary mb-xs">AMDOX ENTERPRISE</h2>
+            <div class="flex items-center gap-xs">
+                <span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                <h1 class="font-headline-md text-headline-md">[SYS_STAT // ACTIVE]</h1>
+            </div>
+            <p class="font-status-mono text-status-mono text-outline opacity-70">Admin Terminal v4.2</p>
+        </div>
+        <nav class="flex-1 space-y-unit">
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="dashboard.html">
+                <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                <span class="font-status-mono text-status-mono">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="dashboard.html#lead-ingestion">
+                <span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+                <span class="font-status-mono text-status-mono">Leads</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="index.html#case-studies">
+                <span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+                <span class="font-status-mono text-status-mono">Projects</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="dashboard.html#velocity-card">
+                <span class="material-symbols-outlined" data-icon="insights">insights</span>
+                <span class="font-status-mono text-status-mono">Analytics</span>
+            </a>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest hover:translate-x-1 rounded-xl transition-all duration-300" href="terminal.html">
+                <span class="material-symbols-outlined" data-icon="settings">settings</span>
+                <span class="font-status-mono text-status-mono">System Config</span>
+            </a>
+        </nav>
+        <div class="mt-auto space-y-unit pt-md border-t border-white/5">
+            <button onclick="window.location.href='dashboard.html'" class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary font-label-caps text-label-caps py-md rounded-xl hover:opacity-90 active:scale-95 transition-all mb-md">
+                <span class="material-symbols-outlined text-[18px]" data-icon="arrow_back">arrow_back</span>
+                Executive Dashboard
+            </button>
+            <a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all" href="index.html">
+                <span class="material-symbols-outlined" data-icon="help">help</span>
+                <span class="font-status-mono text-status-mono">Support</span>
+            </a>
+            <a class="flex items-center gap-md p-md bg-primary-container text-on-primary-container font-bold rounded-xl transition-all duration-300" href="terminal.html">
+                <span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+                <span class="font-status-mono text-status-mono">Logs / Term</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Canvas -->
+    <main class="flex-1 md:ml-72 flex flex-col min-h-screen bg-background relative overflow-hidden">
+        <!-- Header Top Bar -->
+        <header class="h-16 flex justify-between items-center px-margin border-b border-white/5 bg-background/80 backdrop-blur-md sticky top-0 z-40">
+            <div class="flex items-center gap-md">
+                <h2 class="font-label-caps text-label-caps text-outline">/admin/dashboard/terminal</h2>
+                <span id="db-status-badge" class="font-status-mono text-[9px] px-sm py-0.5 rounded border select-none">
+                    DB LOADING...
+                </span>
+            </div>
+            <div class="flex items-center gap-lg">
+                <div class="flex items-center gap-md bg-surface-container-low border border-white/5 px-md py-xs rounded-full">
+                    <span class="w-2.5 h-2.5 bg-secondary rounded-full animate-ping"></span>
+                    <span class="font-status-mono text-status-mono text-secondary uppercase text-[10px]" id="telemetry-node">NODE: US-EAST-01 // PING: 42ms</span>
+                </div>
+                <div class="flex gap-md">
+                    <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" onclick="window.location.reload()" data-icon="sync">sync</span>
+                    <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" onclick="window.location.href='dashboard.html'" data-icon="close">close</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Terminal Workspace -->
+        <div class="p-margin max-w-max-width mx-auto w-full flex-1 flex flex-col justify-start space-y-md">
+            <!-- Telemetry Stats Panel -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+                <div class="glass-card p-md rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="font-label-caps text-label-caps text-outline block mb-1">NODE COMPUTE</span>
+                        <div class="font-headline-md text-headline-md text-primary" id="stat-cpu">34.2%</div>
+                    </div>
+                    <span class="material-symbols-outlined text-primary text-[28px]">memory</span>
+                </div>
+                <div class="glass-card p-md rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="font-label-caps text-label-caps text-outline block mb-1">RAM ALLOCATED</span>
+                        <div class="font-headline-md text-headline-md text-secondary" id="stat-ram">18.4 GB</div>
+                    </div>
+                    <span class="material-symbols-outlined text-secondary text-[28px]">developer_board</span>
+                </div>
+                <div class="glass-card p-md rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="font-label-caps text-label-caps text-outline block mb-1">NET THROUGHPUT</span>
+                        <div class="font-headline-md text-headline-md text-tertiary" id="stat-net">1.24 GB/s</div>
+                    </div>
+                    <span class="material-symbols-outlined text-tertiary text-[28px]">speed</span>
+                </div>
+                <div class="glass-card p-md rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="font-label-caps text-label-caps text-outline block mb-1">VPN STATUS</span>
+                        <div class="font-headline-md text-headline-md text-secondary" id="stat-vpn">SECURE</div>
+                    </div>
+                    <span class="material-symbols-outlined text-secondary text-[28px]">vpn_key</span>
+                </div>
+            </div>
+
+            <!-- Terminal Main Shell Panel -->
+            <div class="terminal-container flex-1 rounded-2xl overflow-hidden flex flex-col min-h-[550px] relative">
+                <!-- Scanline effects -->
+                <div class="scanlines"></div>
+
+                <!-- Custom Overlay for Matrix rain -->
+                <canvas id="matrix-canvas" class="absolute inset-0 w-full h-full hidden z-20 pointer-events-auto bg-black"></canvas>
+                <div id="matrix-abort-msg" class="absolute top-4 right-4 z-30 bg-primary-container text-on-primary-container px-md py-sm font-label-caps text-label-caps font-bold rounded shadow-lg border border-primary/40 hidden animate-pulse">
+                    Press ESC or ANY key to terminate simulation
+                </div>
+
+                <!-- Terminal Header Bar -->
+                <div class="terminal-header px-md py-sm flex justify-between items-center text-status-mono text-outline select-none">
+                    <div class="flex items-center gap-sm">
+                        <span class="w-3 h-3 rounded-full bg-error cursor-pointer" onclick="window.location.href='dashboard.html'"></span>
+                        <span class="w-3 h-3 rounded-full bg-secondary-fixed cursor-pointer" onclick="clearTerminal()"></span>
+                        <span class="w-3 h-3 rounded-full bg-primary cursor-pointer" onclick="toggleFullScreen()"></span>
+                        <span class="font-status-mono ml-md text-[11px] tracking-wider font-semibold text-primary">AMDOX SECURE TERM // CONNECTED // US-EAST-01</span>
+                    </div>
+                    <div class="flex items-center gap-md text-[11px]">
+                        <span>SESSION: 8a42-ff01</span>
+                        <span>SHIELD: ON</span>
+                    </div>
+                </div>
+
+                <!-- Terminal Output Display -->
+                <div id="terminal-screen" class="terminal-body flex-1 p-lg overflow-y-auto custom-scrollbar flex flex-col text-body-md text-on-surface-variant font-status-mono leading-relaxed max-h-[500px] md:max-h-[600px]">
+                    <div class="text-glow-primary text-primary mb-1">AMDOX ERP SECURE ENCRYPTED NETWORK LAYER (v4.2.0-STABLE)</div>
+                    <div class="text-outline/70 mb-1">ESTABLISHING COGNITIVE DECRYPTION SHIELD... SUCCESS.</div>
+                    <div class="text-outline/70 mb-1">ROOT CONNECTION AUTHORIZED AT NODE [US-EAST-01].</div>
+                    <div class="text-secondary/80 mb-3 flex items-center gap-xs">
+                        <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                        <span>SYSTEM TELEMETRY REPORTING IN ACTIVE PARTITION.</span>
+                    </div>
+                    <div class="text-outline mb-4">Type <span class="text-secondary text-glow font-bold">'help'</span> to query executive control scripts.</div>
+                    
+                    <!-- Appended commands and output go here -->
+                    <div id="terminal-history" class="space-y-sm"></div>
+
+                    <!-- Terminal Active Prompter Row -->
+                    <div class="flex items-center gap-sm mt-md" id="terminal-prompt-row">
+                        <span class="text-primary font-bold whitespace-nowrap">amdox@ops-terminal:~$</span>
+                        <input type="text" id="term-input" class="terminal-input font-status-mono text-secondary text-glow" autofocus autocomplete="off" spellcheck="false" placeholder="Enter security command..."/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="w-full py-lg px-margin border-t border-white/5 mt-auto bg-surface-container-lowest select-none">
+            <div class="max-w-max-width mx-auto flex flex-col md:flex-row justify-between items-center gap-md">
+                <div class="font-status-mono text-status-mono text-outline/50 uppercase">
+                    ENCRYPTED PIPELINE // RSA-4096-AES // REGION: GLOBAL-NORTH
+                </div>
+                <div class="font-status-mono text-status-mono text-secondary">
+                    TERMINAL_v4.2.0-STABLE
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script src="supabase-client.js"></script>
+    <script>
+        // Authentication session guard
+        async function checkAuth() {
+            if (window.amdoxDb) {
+                const session = await window.amdoxDb.getSession();
+                if (!session) {
+                    alert("Unauthorized access. Redirecting to auth core.");
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('app-body').classList.remove('opacity-0');
+                    updateDbStatus();
+                    loadHistoryLogs();
+                }
+            }
+        }
+
+        function updateDbStatus() {
+            const badge = document.getElementById('db-status-badge');
+            if (window.amdoxDb) {
+                if (window.amdoxDb.isMock()) {
+                    badge.innerText = "[DB: SANDBOX MOCK]";
+                    badge.className = "font-status-mono text-[9px] px-sm py-0.5 rounded border border-yellow-500/30 text-yellow-500 bg-yellow-500/10 select-none";
+                } else {
+                    badge.innerText = "[DB: SUPABASE LIVE]";
+                    badge.className = "font-status-mono text-[9px] px-sm py-0.5 rounded border border-secondary/30 text-secondary bg-secondary/10 select-none";
+                }
+            }
+        }
+
+        // Fetch logs and history from database on startup
+        async function loadHistoryLogs() {
+            if (window.amdoxDb) {
+                try {
+                    const logs = await window.amdoxDb.getTerminalLogs();
+                    // Load in chronological order for display
+                    logs.reverse().forEach(log => {
+                        appendCommandLine(log.command, log.output, new Date(log.created_at));
+                    });
+                } catch(e) {
+                    console.error("Failed to query terminal history logs", e);
+                }
+            }
+        }
+
+        function appendCommandLine(command, output, time) {
+            const timeStr = time ? time.toLocaleTimeString() : new Date().toLocaleTimeString();
+            
+            // Append Command
+            const promptCopy = document.createElement('div');
+            promptCopy.className = "flex items-center gap-sm mt-sm text-xs opacity-60";
+            promptCopy.innerHTML = `<span class="text-primary font-bold">[${timeStr}] amdox@ops-terminal:~$</span> <span class="text-secondary font-semibold">${command}</span>`;
+            termHistory.appendChild(promptCopy);
+
+            // Append Output
+            const resultBox = document.createElement('div');
+            resultBox.className = "mt-xs mb-sm leading-relaxed text-xs border-l border-white/5 pl-md opacity-80";
+            resultBox.innerHTML = output;
+            termHistory.appendChild(resultBox);
+
+            termScreen.scrollTop = termScreen.scrollHeight;
+        }
+
+        // DOM Telemetry elements
+        const statCpu = document.getElementById('stat-cpu');
+        const statRam = document.getElementById('stat-ram');
+        const statNet = document.getElementById('stat-net');
+        const telemetryNode = document.getElementById('telemetry-node');
+
+        // Dynamic Telemetry updating simulation
+        setInterval(() => {
+            const cpu = (30 + Math.random() * 15).toFixed(1);
+            const ram = (17.5 + Math.random() * 1.5).toFixed(1);
+            const net = (1.1 + Math.random() * 0.3).toFixed(2);
+            const ping = Math.floor(35 + Math.random() * 15);
+
+            statCpu.innerText = `${cpu}%`;
+            statRam.innerText = `${ram} GB`;
+            statNet.innerText = `${net} GB/s`;
+            telemetryNode.innerText = `NODE: US-EAST-01 // PING: ${ping}ms`;
+        }, 3000);
+
+        // Terminal logic
+        const termInput = document.getElementById('term-input');
+        const termHistory = document.getElementById('terminal-history');
+        const termScreen = document.getElementById('terminal-screen');
+        const promptRow = document.getElementById('terminal-prompt-row');
+
+        // Keep input focused
+        termScreen.addEventListener('click', () => {
+            if (!matrixActive) termInput.focus();
+        });
+
+        // Event listener for input commands
+        termInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const commandText = termInput.value;
+                termInput.value = '';
+                if (commandText.trim()) {
+                    executeCommand(commandText);
+                }
+            }
+        });
+
+        // Clear terminal utility
+        function clearTerminal() {
+            termHistory.innerHTML = '';
+            termInput.value = '';
+        }
+
+        // Available terminal log messages to feed in background
+        const logTemplates = [
+            "SYS_STAT: [OK] Firewall integrity handshake successful.",
+            "AUDIT_LOG: Transaction SEC_ALPHA_10 consolidated values validated (+$12,400.00).",
+            "SEC_WARN: Blocked brute force probe attempt from IP 45.18.243.81.",
+            "SYS_BALANCER: Dynamic container reallocation: HR microservice shifted to backup node APAC-02.",
+            "TAX_ENGINE: Autoreconciliation of regional subsidy filings loaded.",
+            "DATABASE: SOC2 automated backup vault mapped and synchronized."
+        ];
+
+        // Background system activity simulator printing to logs occasionally
+        setInterval(() => {
+            if (matrixActive) return;
+            if (Math.random() > 0.8) {
+                const time = new Date().toLocaleTimeString();
+                const randomMsg = logTemplates[Math.floor(Math.random() * logTemplates.length)];
+                
+                const logEl = document.createElement('div');
+                logEl.className = "text-[11px] text-outline/40 italic flex items-center gap-md";
+                logEl.innerHTML = `<span class="text-primary/40 font-bold">[SYS_DAEMON ${time}]</span> <span>${randomMsg}</span>`;
+                termHistory.appendChild(logEl);
+                
+                termScreen.scrollTop = termScreen.scrollHeight;
+            }
+        }, 8000);
+
+        // Command Executor
+        async function executeCommand(cmdRaw) {
+            const cmdClean = cmdRaw.trim();
+            const parts = cmdClean.split(' ');
+            const command = parts[0].toLowerCase();
+            const args = parts.slice(1);
+
+            // Append prompt local UI
+            const promptCopy = document.createElement('div');
+            promptCopy.className = "flex items-center gap-sm mt-sm";
+            promptCopy.innerHTML = `<span class="text-primary font-bold">amdox@ops-terminal:~$</span> <span class="text-secondary text-glow">${cmdClean}</span>`;
+            termHistory.appendChild(promptCopy);
+
+            // Command Processing
+            const resultBox = document.createElement('div');
+            resultBox.className = "mt-xs mb-sm leading-relaxed";
+            let outputHtml = "";
+
+            switch (command) {
+                case 'help':
+                    outputHtml = `
+                        <div class="text-primary font-semibold mb-sm">AMDOX ERP Executive Terminal Commands:</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-lg gap-y-1 text-xs text-outline/80">
+                            <div><span class="text-secondary font-bold">help</span> - Print this commands overview menu.</div>
+                            <div><span class="text-secondary font-bold">status</span> - Detailed virtual node compute telemetry report.</div>
+                            <div><span class="text-secondary font-bold">logs</span> - Fetch latest raw database security audit logs.</div>
+                            <div><span class="text-secondary font-bold">ping [target]</span> - Check network packet telemetry latency.</div>
+                            <div><span class="text-secondary font-bold">matrix</span> - Run digital rain screen matrix diagnostic.</div>
+                            <div><span class="text-secondary font-bold">sys_stat</span> - Display ASCII configuration schematic.</div>
+                            <div><span class="text-secondary font-bold">clear</span> - Clear terminal session prompt history.</div>
+                            <div><span class="text-secondary font-bold">exit</span> - Log out and return to corporate dashboard.</div>
+                        </div>
+                    `;
+                    break;
+                case 'status':
+                    outputHtml = `
+                        <div class="text-outline text-glow-primary mb-xs">/sys/node/us-east-01/status:</div>
+                        <div class="space-y-0.5 text-xs text-outline/80">
+                            <div>OPERATING SYSTEM: <span class="text-secondary font-bold">AMDOX-OS Enterprise Server Core v4.2</span></div>
+                            <div>CLUSTER STATE: <span class="text-secondary font-bold">ACTIVE // STABLE</span></div>
+                            <div>CPU LOAD PER NODE CORE:</div>
+                            <div class="flex items-center gap-sm">
+                                <span class="w-16">CORE 0:</span> <span class="text-secondary">[██████▒▒▒▒] 60%</span>
+                                <span class="w-16">CORE 1:</span> <span class="text-secondary">[████████▒▒] 80%</span>
+                            </div>
+                            <div class="flex items-center gap-sm">
+                                <span class="w-16">CORE 2:</span> <span class="text-secondary">[███▒▒▒▒▒▒▒] 30%</span>
+                                <span class="w-16">CORE 3:</span> <span class="text-secondary">[████▒▒▒▒▒▒] 40%</span>
+                            </div>
+                            <div>MEMORY ALLOCATION: <span class="text-primary">18.42 GB / 64.00 GB (28.7%)</span></div>
+                            <div>ACTIVE CLUSTER PIPELINES: <span class="text-secondary font-bold">3 Operational</span> (Finance, HR, Logistics)</div>
+                            <div>LOAD BALANCER EFFICIENCY: <span class="text-secondary font-glow">99.89% OPTIMAL</span></div>
+                        </div>
+                    `;
+                    break;
+                case 'logs':
+                    const dateStr = new Date().toISOString().split('T')[0];
+                    outputHtml = `
+                        <div class="text-outline text-glow-primary mb-xs">Fetching security log partition...</div>
+                        <div class="space-y-1 text-xs font-mono text-outline/60">
+                            <div>[${dateStr} 12:08:42] SEC_INFO: Authenticated API key: synthax_partner_04.</div>
+                            <div>[${dateStr} 12:44:11] SEC_WARN: API endpoint rate-limit threshold warnings issued for IP: 198.51.100.12.</div>
+                            <div>[${dateStr} 13:01:05] SEC_AUDIT: System audit: SOC2 Compliance Check -> PASSED (0 anomalies).</div>
+                            <div>[${dateStr} 13:14:22] SEC_INFO: Node load reallocation triggered from core load monitoring system.</div>
+                            <div>[${dateStr} 13:25:56] SEC_ERROR: DB connection timeout pool: Re-established link within 12ms.</div>
+                        </div>
+                    `;
+                    break;
+                case 'ping':
+                    const target = args[0] || 'localhost';
+                    outputHtml = `
+                        <div class="text-outline text-xs">PINGING ${target} [IP: ${Math.floor(Math.random() * 200 + 1)}.${Math.floor(Math.random() * 254)}.${Math.floor(Math.random() * 254)}.${Math.floor(Math.random() * 254)}]...</div>
+                        <div class="text-xs space-y-0.5 mt-xs text-outline/80">
+                            <div>64 bytes from ${target}: icmp_seq=1 ttl=64 time=${(Math.random() * 10 + 35).toFixed(1)} ms</div>
+                            <div>64 bytes from ${target}: icmp_seq=2 ttl=64 time=${(Math.random() * 10 + 35).toFixed(1)} ms</div>
+                            <div>64 bytes from ${target}: icmp_seq=3 ttl=64 time=${(Math.random() * 10 + 35).toFixed(1)} ms</div>
+                            <div class="text-secondary font-bold mt-xs">--- ${target} ping statistics ---</div>
+                            <div>3 packets transmitted, 3 received, 0% packet loss, time 2003ms</div>
+                        </div>
+                    `;
+                    break;
+                case 'matrix':
+                    outputHtml = `<span class="text-primary italic">Initializing Matrix Screen Rain diagnostic matrix...</span>`;
+                    setTimeout(() => {
+                        startMatrixRain();
+                    }, 500);
+                    break;
+                case 'sys_stat':
+                    outputHtml = `
+                        <pre class="text-primary text-glow-primary text-[10px] md:text-xs leading-none font-bold">
+   ___  __  ___  _____  __  __
+  / _ \\/  |/  / /  _/ _ \\| |/_/
+ / ___/ /|_/ / _/ // ___/>  &lt; 
+/_/  /_/  /_/ /___/_/  /_/|_|  
+                        </pre>
+                        <div class="mt-sm text-xs space-y-0.5 text-outline/80">
+                            <div>COGNITIVE OPERATING SYSTEM PLATFORM v4.2.0-STABLE</div>
+                            <div>REGIONAL PARTITION: <span class="text-secondary font-bold">GLOBAL-NORTH-US-EAST</span></div>
+                            <div>DECRYPTION CODE LEVEL: <span class="text-primary font-bold">SECURE // COMPLIANT</span></div>
+                            <div>SECURITY CLASSIFICATION: <span class="text-error font-glow font-bold">EXECUTIVE DIRECTIVE</span></div>
+                        </div>
+                    `;
+                    break;
+                case 'clear':
+                    clearTerminal();
+                    return; // Quit early
+                case 'exit':
+                    outputHtml = `<span class="text-error">Logging out... Session terminated. Redirecting to Executive Suite...</span>`;
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1200);
+                    break;
+                default:
+                    outputHtml = `<span class="text-error">Command not found: '${command}'. Type <span class="font-bold underline cursor-pointer" onclick="executeCommand('help')">'help'</span> to list executive system controls.</span>`;
+                    break;
+            }
+
+            resultBox.innerHTML = outputHtml;
+            termHistory.appendChild(resultBox);
+            termScreen.scrollTop = termScreen.scrollHeight;
+
+            // Log command execution to database
+            if (window.amdoxDb) {
+                try {
+                    await window.amdoxDb.logTerminalCommand(cmdClean, outputHtml);
+                } catch (e) {
+                    console.error("Failed to write log to DB", e);
+                }
+            }
+        }
+
+        // Full Screen Toggle
+        let fullScreen = false;
+        function toggleFullScreen() {
+            const panel = document.querySelector('.terminal-container');
+            if(!fullScreen) {
+                panel.classList.add('fixed', 'inset-4', 'z-50', 'bg-black');
+                panel.classList.remove('flex-1');
+                fullScreen = true;
+            } else {
+                panel.classList.remove('fixed', 'inset-4', 'z-50', 'bg-black');
+                panel.classList.add('flex-1');
+                fullScreen = false;
+            }
+        }
+
+        // Matrix Rain Canvas Effect
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        const abortMsg = document.getElementById('matrix-abort-msg');
+        let matrixActive = false;
+        let matrixInterval = null;
+
+        const columns = [];
+        const fontSize = 14;
+        const alphabet = "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍｦｲｸｺｿﾁﾄﾉﾌﾔﾖﾙﾚﾛﾝ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$@%&";
+
+        function setupMatrix() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            const colCount = Math.floor(canvas.width / fontSize);
+            for(let x=0; x<colCount; x++) {
+                columns[x] = Math.random() * -100;
+            }
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = fontSize + "px monospace";
+
+            for(let i=0; i<columns.length; i++) {
+                const char = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                
+                if (Math.random() > 0.95) {
+                    ctx.fillStyle = "#fff";
+                } else if (Math.random() > 0.5) {
+                    ctx.fillStyle = "#4edea3";
+                } else {
+                    ctx.fillStyle = "#4f46e5";
+                }
+
+                const x = i * fontSize;
+                const y = columns[i] * fontSize;
+
+                ctx.fillText(char, x, y);
+
+                if(y > canvas.height && Math.random() > 0.975) {
+                    columns[i] = 0;
+                }
+                columns[i]++;
+            }
+        }
+
+        function startMatrixRain() {
+            matrixActive = true;
+            canvas.classList.remove('hidden');
+            abortMsg.classList.remove('hidden');
+            termInput.blur();
+            setupMatrix();
+            window.addEventListener('resize', setupMatrix);
+            matrixInterval = setInterval(drawMatrix, 35);
+        }
+
+        function stopMatrixRain() {
+            if (!matrixActive) return;
+            clearInterval(matrixInterval);
+            window.removeEventListener('resize', setupMatrix);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.classList.add('hidden');
+            abortMsg.classList.add('hidden');
+            matrixActive = false;
+            
+            const logEl = document.createElement('div');
+            logEl.className = "text-secondary font-bold mt-sm";
+            logEl.innerText = ">> Diagnostic Matrix simulation aborted. Returned to active ops pipeline.";
+            termHistory.appendChild(logEl);
+            termScreen.scrollTop = termScreen.scrollHeight;
+            
+            setTimeout(() => {
+                termInput.focus();
+            }, 100);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (matrixActive) {
+                e.preventDefault();
+                stopMatrixRain();
+            }
+        });
+        canvas.addEventListener('click', () => {
+            if (matrixActive) {
+                stopMatrixRain();
+            }
+        });
+
+        // Initialize auth guard check
+        checkAuth();
+    </script>
+</body>
+</html>

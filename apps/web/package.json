@@ -1,0 +1,30 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "react": "^19.0.0-rc",
+    "react-dom": "^19.0.0-rc",
+    "next": "15.0.0",
+    "zustand": "^4.5.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "@tanstack/react-query": "^5.28.0",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.0",
+    "recharts": "^2.12.0",
+    "lucide-react": "^0.300.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/react": "^19.0.0-rc",
+    "@types/react-dom": "^19.0.0-rc",
+    "@types/node": "^20.0.0",
+    "tailwindcss": "^4.0.0-alpha"
+  }
+}

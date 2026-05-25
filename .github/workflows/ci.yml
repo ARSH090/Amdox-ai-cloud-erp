@@ -1,0 +1,58 @@
+# .github/workflows/ci.yml
+name: AMDOX ERP // Monorepo CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+    - name: Checkout Source Workspace
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'pnpm'
+      env:
+        # Enable caching via pnpm
+        cache-dependency-path: 'pnpm-lock.yaml'
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install Monorepo Dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Execute Linting Format Sweeps
+      run: pnpm run lint
+
+    - name: Run Workspace Tests
+      run: pnpm run test
+
+    - name: Build Monorepo Target Modules
+      run: pnpm run build
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@v4
+
+    - name: Execute Security Scan (Trivy)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'table'
+        severity: 'HIGH,CRITICAL'
