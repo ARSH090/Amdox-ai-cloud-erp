@@ -2,6 +2,16 @@
 // TanStack Query wrapper hooks for real-time API data fetching
 "use client";
 
+/* eslint-disable @typescript-eslint/no-namespace */
+declare const process: { env: Record<string, string | undefined> };
+
+declare module 'react' {
+  export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prev: T) => T)) => void];
+  export function useEffect(effect: () => void | (() => void), deps?: any[]): void;
+  export function useCallback<T extends (...args: any[]) => any>(callback: T, deps: any[]): T;
+  export function useRef<T>(initialValue: T): { current: T };
+}
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
@@ -25,7 +35,7 @@ interface UseApiQueryOptions {
   retryDelay?: number;
 }
 
-const API_BASE = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'http://localhost:3000/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 /**
  * Enterprise API Query Hook.
@@ -249,7 +259,7 @@ function getTenantId(): string {
  * Development fallback data generator.
  */
 function getDevFallbackData<T>(endpoint: string): T | null {
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'development') return null;
+  if (process.env.NODE_ENV !== 'development') return null;
 
   const fallbacks: Record<string, any> = {
     '/finance/accounts': [

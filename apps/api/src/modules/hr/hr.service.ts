@@ -13,8 +13,7 @@ export class HrService {
 
   async retrieveWorkforceRegistry(tenantId: string) {
     return this.prisma.employee.findMany({
-      where: { tenantId: tenantId, deletedAt: null },
-      include: { department: true }
+      where: { tenantId: tenantId, deletedAt: null }
     });
   }
 

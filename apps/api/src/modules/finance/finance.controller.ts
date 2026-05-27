@@ -15,6 +15,6 @@ export class FinanceController {
   @Post('journal-entries')
   async createEntry(@Headers('x-tenant-id') tenantId: string, @Body() payload: any) {
     if (!tenantId) throw new BadRequestException('Missing mandatory tenant domain execution claims.');
-    return this.financeService.postJournalEntry(tenantId, payload);
+    return this.financeService.createJournalEntry(tenantId, payload, ['admin'], true);
   }
 }

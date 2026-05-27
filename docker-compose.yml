@@ -7,7 +7,7 @@
 services:
   # ── Primary PostgreSQL Transaction Database ──────────────────────────
   postgres:
-    image: postgres:17-alpine
+    image: timescale/timescaledb:latest-pg17
     container_name: amdox-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-amdox_db}
@@ -70,6 +70,8 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-amdox_secure_password}
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - keycloakdata:/opt/keycloak/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -154,9 +156,9 @@ services:
           memory: 512M
           cpus: '1.0'
       restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
     restart: unless-stopped
     networks:
       - amdox-internal
@@ -222,4 +224,6 @@ volumes:
   redisdata:
     driver: local
   esdata:
+    driver: local
+  keycloakdata:
     driver: local
