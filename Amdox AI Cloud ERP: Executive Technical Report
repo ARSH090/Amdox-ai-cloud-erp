@@ -1,0 +1,116 @@
+# Amdox AI Cloud ERP: Executive Technical Report
+
+> [!NOTE]
+> **Prepared for:** Executive Leadership & Stakeholders  
+> **Subject:** Technical Review and Capability Overview of the Amdox Enterprise Cloud Suite  
+
+## 1. Executive Summary
+
+The **Amdox AI Cloud ERP** is a premium, high-performance, dark-mode corporate Enterprise Resource Planning suite. It is engineered with a strict **Multi-Tenant SaaS** modular monolith architecture. By combining a modern Node.js ecosystem (Next.js and NestJS) with a dedicated Python Machine Learning microservice, Amdox provides an unparalleled suite of financial, human resources, and supply chain tools.
+
+The platform is designed with zero-trust security principles, cryptographic tamper-evidence, and AI-driven forecasting capabilities, making it a state-of-the-art solution for modern enterprise management.
+
+---
+
+## 2. System Architecture
+
+The application operates on a decoupled, microservice-augmented modular monolith design to ensure high availability and strict separation of concerns.
+
+```mermaid
+graph TD
+    User([End User / Web Client])
+    Gateway[Next.js Web Server / PWA]
+    API[NestJS API Gateway]
+    AI[FastAPI Python Microservice]
+    DB[(PostgreSQL + TimescaleDB)]
+    
+    User -->|HTTPS / WSS| Gateway
+    Gateway -->|GraphQL / REST / JWT| API
+    
+    subgraph "Core NestJS ERP Gateway"
+      Auth[AuthModule & RBAC]
+      Tenant[Tenant Middleware]
+      Audit[Audit Interceptor]
+      
+      API --> Auth
+      Auth --> Tenant
+      Tenant --> Audit
+    end
+
+    Audit -->|HTTP POST| AI
+    Audit -->|Prisma Client| DB
+    
+    subgraph "Data Persistence"
+      DB_RLS[Postgres Row-Level Security]
+      DB --> DB_RLS
+    end
+```
+
+### Key Technologies:
+* **Frontend:** Next.js with Progressive Web App (PWA) capabilities for offline read-access to critical reports.
+* **Backend:** NestJS API Gateway handling complex business logic, Role-Based Access Control (RBAC), and tenant routing.
+* **AI/ML:** FastAPI (Python) running Facebook Prophet for deterministic time-series forecasting.
+* **Database:** PostgreSQL accelerated by TimescaleDB for high-volume time-series ledger transactions.
+* **ORM:** Prisma Client with dynamic Row-Level Security (RLS) extensions.
+
+---
+
+## 3. Core Modules & Capabilities
+
+The ERP suite is divided into three primary operational pillars:
+
+### A. Finance & Accounting (AP/AR)
+> [!IMPORTANT]  
+> The system enforces strict Double-Entry ledger tracking and deterministic journal balancing. 
+
+If a user attempts to submit an unbalanced journal entry (e.g., Debits: $100, Credits: $90), the system automatically rejects it with an `UnbalancedLedgerException`, proving mathematical and structural integrity.
+
+### B. Supply Chain & Logistics
+Features a comprehensive administrative panel with:
+* Real-time interactive line charts for transaction velocity.
+* Real-time heatmaps for computing loads and inventory levels.
+* Automated procurement flows (Requisition → Purchase Order → Goods Receipt).
+
+### C. Human Resources & Payroll
+Automates the employee lifecycle, including:
+* Core HR data management and organization hierarchies.
+* Leave request processing and balance tracking.
+* Automated payroll runs and tax slab calculations.
+
+---
+
+## 4. Enterprise Security & Compliance
+
+Security is baked into the foundation of the Amdox ERP architecture, achieving a zero-trust environment.
+
+> [!CAUTION]
+> **Cryptographic Tamper Evidence**  
+> An `AuditInterceptor` traps every `POST`, `PUT`, and `DELETE` payload and constructs a chained SHA-256 hash. If a malicious actor bypasses the API to modify the database directly (e.g., altering an invoice value), the `verifyChainIntegrity` service flags the cryptographic mismatch instantly.
+
+* **Zero-Trust Boundaries:** Every API request passes through strict tenant middleware intercepting the `x-tenant-id` header.
+* **Dynamic Row-Level Security (RLS):** Queries do not rely on manual `WHERE tenantId = ?` clauses. A custom Prisma extension dynamically scopes all database interactions at the postgres level, ensuring cross-tenant data leaks are physically impossible.
+
+---
+
+## 5. Artificial Intelligence & Forecasting
+
+The platform bridges deterministic ERP logic with non-deterministic Machine Learning models:
+* **Prophet Integration:** The Supply Chain module gathers 90-day SKU movement history and sends it to the Python ML microservice.
+* **Dynamic Forecasting:** The ML node trains a model on the fly and returns a 30-day forecast, which is rendered on the Next.js frontend using ECharts visualizations.
+
+> [!TIP]
+> This capability allows procurement managers to anticipate stock shortages weeks in advance based on historical velocity and seasonal trends.
+
+---
+
+## 6. Deployment & DevOps Strategy
+
+We utilize standard GitOps flows for Continuous Deployment:
+* **Containerization:** All services (Web, API, ML) are containerized via Docker.
+* **Orchestration:** Deployed using Kubernetes and Helm charts for horizontal scaling and environment variable management.
+* **GitOps:** ArgoCD actively observes the `infra/k8s/argocd.yaml` manifest to automatically sync production states with the repository.
+
+---
+
+**Report Concluded.**  
+*Generated from the Amdox ERP source repository.*
