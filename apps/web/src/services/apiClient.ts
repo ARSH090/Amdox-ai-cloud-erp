@@ -1,58 +1,42 @@
 // apps/web/src/services/apiClient.ts
-'use client';
+import axios from 'axios';
 
-const NEST_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-interface FetchOptions extends RequestInit {
-  idempotencyKey?: string;
-  bodyData?: any;
-}
-
-/**
- * Production API Transport Bridge.
- * Bypasses browser sandbox caches to route directly to live NestJS endpoints.
- */
-export async function fetchFromProductionEngine<T>(
-  endpoint: string,
-  options: FetchOptions = {}
-): Promise<T> {
-  const currentTenantId = typeof window !== 'undefined' ? (localStorage.getItem('amdox_tenant_id') || 'amdox-engineering') : 'amdox-engineering';
-  const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem('amdox_user_id') || 'root-system-admin') : 'root-system-admin';
-
-  const headers = new Headers(options.headers);
-  headers.set('Content-Type', 'application/json');
-  headers.set('X-Tenant-Id', currentTenantId);
-  headers.set('X-User-Id', currentUserId);
-
-  if (options.idempotencyKey) {
-    headers.set('X-Idempotency-Key', options.idempotencyKey);
-  }
-
-  const activeToken = typeof window !== 'undefined' ? localStorage.getItem('amdox_auth_token') : null;
-  if (activeToken) {
-    headers.set('Authorization', `Bearer ${activeToken}`);
-  }
-
-  const config: RequestInit = {
-    ...options,
-    headers,
+export interface ApiResponseEnvelope<T> {
+  data: T;
+  meta: {
+    correlationId: string;
+    timestamp: string;
   };
-
-  if (options.bodyData) {
-    config.body = JSON.stringify(options.bodyData);
-  }
-
-  try {
-    const response = await fetch(`${NEST_API_BASE}/${endpoint}`, config);
-
-    if (!response.ok) {
-      const errorPayload = await response.json().catch(() => ({}));
-      throw new Error(errorPayload.message || `API Exception Encountered: HTTP Status ${response.status}`);
-    }
-
-    return await response.json() as T;
-  } catch (networkFault: any) {
-    console.error(`[CRITICAL_NETWORK_FAILURE] [Target: ${endpoint}]:`, networkFault.message);
-    throw networkFault;
-  }
 }
+
+export const apiClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
+  timeout: 30000,
+  withCredentials: true, // Crucial: forces browser to pass secure httpOnly tokens automatically
+});
+
+// Outbound request interceptor for handling dynamic transaction variables
+apiClient.interceptors.request.use(
+  (config) => {
+    // Inject a unique cryptographic idempotency token on data mutations to prevent double-submits
+    if (['post', 'put', 'patch', 'delete'].includes(config.method || '')) {
+      config.headers['X-Idempotency-Key'] = crypto.randomUUID();
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Inbound response interceptor matching the Zero-Collapse layout protocols
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('⚠️ Unauthorized session context detected. Redirecting to SSO Identity Gateway.');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);

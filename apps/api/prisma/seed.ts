@@ -15,6 +15,8 @@ async function main() {
       name: 'Amdox Global Corporate Ltd',
       plan: 'enterprise',
       keycloakRealm: 'amdox-enterprise',
+      activationId: 'ACT-CORP-9999-XYZ',
+      status: 'ACTIVE',
       settings: {
         theme: 'dark',
         features: { finance: true, hr: true, supplyChain: true, forecasting: true }
@@ -23,45 +25,75 @@ async function main() {
   });
   console.log(`Seeded Tenant: ${tenant.name} (${tenant.id})`);
 
-  // 2. Seed Users
-  const adminUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'admin@amdox.com' } },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      keycloakSub: 'k-admin-01',
-      email: 'admin@amdox.com',
-      fullName: 'Sarah Connor',
-      avatarUrl: '',
-      isActive: true
-    }
-  });
-  console.log(`Seeded User: ${adminUser.fullName}`);
+  // 2. Seed Roles and Users
+  const superAdminRole = await prisma.role.upsert({ where: { tenantId_name: { tenantId: tenant.id, name: 'SuperAdmin' } }, update: {}, create: { tenantId: tenant.id, name: 'SuperAdmin' } });
+  const tenantAdminRole = await prisma.role.upsert({ where: { tenantId_name: { tenantId: tenant.id, name: 'TenantAdmin' } }, update: {}, create: { tenantId: tenant.id, name: 'TenantAdmin' } });
+  const managerRole = await prisma.role.upsert({ where: { tenantId_name: { tenantId: tenant.id, name: 'Manager' } }, update: {}, create: { tenantId: tenant.id, name: 'Manager' } });
+  const viewerRole = await prisma.role.upsert({ where: { tenantId_name: { tenantId: tenant.id, name: 'Viewer' } }, update: {}, create: { tenantId: tenant.id, name: 'Viewer' } });
 
-  // 3. Seed Accounts (GL Chart of Accounts)
-  const cashAccount = await prisma.account.upsert({
-    where: { tenantId_code: { tenantId: tenant.id, code: '1010' } },
+  const adminUser = await prisma.user.upsert({
+    where: { tenantId_keycloakSub: { tenantId: tenant.id, keycloakSub: 'k-super-01' } },
     update: {},
     create: {
       tenantId: tenant.id,
-      code: '1010',
-      name: 'Cash and Bank Assets',
-      type: 'asset',
-      currency: 'USD'
+      keycloakSub: 'k-super-01',
+      email: 'admin@amdox.com',
+      fullName: 'Super Admin',
+      isActive: true,
+      roles: { create: { roleId: superAdminRole.id } }
     }
   });
   
-  const revenueAccount = await prisma.account.upsert({
-    where: { tenantId_code: { tenantId: tenant.id, code: '4000' } },
+  await prisma.user.upsert({
+    where: { tenantId_keycloakSub: { tenantId: tenant.id, keycloakSub: 'k-sarah-02' } },
     update: {},
-    create: {
-      tenantId: tenant.id,
-      code: '4000',
-      name: 'Sales Revenue',
-      type: 'revenue',
-      currency: 'USD'
-    }
+    create: { tenantId: tenant.id, keycloakSub: 'k-sarah-02', email: 'sarah.admin@amdox.io', fullName: 'Sarah Connor', isActive: true, roles: { create: { roleId: tenantAdminRole.id } } }
   });
+
+  await prisma.user.upsert({
+    where: { tenantId_keycloakSub: { tenantId: tenant.id, keycloakSub: 'k-john-03' } },
+    update: {},
+    create: { tenantId: tenant.id, keycloakSub: 'k-john-03', email: 'john.manager@amdox.io', fullName: 'John Manager', isActive: true, roles: { create: { roleId: managerRole.id } } }
+  });
+
+  await prisma.user.upsert({
+    where: { tenantId_keycloakSub: { tenantId: tenant.id, keycloakSub: 'k-david-04' } },
+    update: {},
+    create: { tenantId: tenant.id, keycloakSub: 'k-david-04', email: 'david.viewer@amdox.io', fullName: 'David Viewer', isActive: true, roles: { create: { roleId: viewerRole.id } } }
+  });
+
+  console.log(`Seeded Users: SuperAdmin, TenantAdmin, Manager, and Viewer`);
+
+  // 3. Seed Accounts (GL Chart of Accounts)
+  let cashAccount = await prisma.account.findFirst({
+    where: { tenantId: tenant.id, code: '1010' }
+  });
+  if (!cashAccount) {
+    cashAccount = await prisma.account.create({
+      data: {
+        tenantId: tenant.id,
+        code: '1010',
+        name: 'Cash and Bank Assets',
+        type: 'asset',
+        currency: 'USD'
+      }
+    });
+  }
+  
+  let revenueAccount = await prisma.account.findFirst({
+    where: { tenantId: tenant.id, code: '4000' }
+  });
+  if (!revenueAccount) {
+    revenueAccount = await prisma.account.create({
+      data: {
+        tenantId: tenant.id,
+        code: '4000',
+        name: 'Sales Revenue',
+        type: 'revenue',
+        currency: 'USD'
+      }
+    });
+  }
   console.log('Seeded Chart of Accounts.');
 
   // 4. Seed Departments & Employees
@@ -101,7 +133,6 @@ async function main() {
   const warehouse = await prisma.warehouse.create({
     data: {
       tenantId: tenant.id,
-      code: 'WH_EAST_01',
       name: 'US-East Logistics Hub',
       location: 'New York, USA'
     }
@@ -112,11 +143,10 @@ async function main() {
       tenantId: tenant.id,
       sku: 'SKU_NODE_01',
       name: 'Core Compute Node v4',
-      unitOfMeasure: 'each',
       reorderPoint: 50.00,
       reorderQty: 200.00,
       unitCost: 120.00,
-      costingMethod: 'FIFO'
+      currency: 'USD'
     }
   });
   
@@ -125,19 +155,18 @@ async function main() {
       tenantId: tenant.id,
       sku: 'SKU_SHIELD_09',
       name: 'Decryption Shield HSM',
-      unitOfMeasure: 'each',
       reorderPoint: 20.00,
       reorderQty: 50.00,
       unitCost: 1500.00,
-      costingMethod: 'FIFO'
+      currency: 'USD'
     }
   });
 
   // Seed inventory stock levels
   await prisma.inventoryLevel.createMany({
     data: [
-      { tenantId: tenant.id, itemId: sku1.id, warehouseId: warehouse.id, quantity: 120.00, location: 'Shelf-A1' },
-      { tenantId: tenant.id, itemId: sku2.id, warehouseId: warehouse.id, quantity: 12.00, location: 'Vault-B2' } // under reorder limit trigger
+      { itemId: sku1.id, warehouseId: warehouse.id, quantity: 120.00 },
+      { itemId: sku2.id, warehouseId: warehouse.id, quantity: 12.00 } // under reorder limit trigger
     ]
   });
   console.log('Seeded Warehousing items and stock loops.');
@@ -150,7 +179,7 @@ async function main() {
       code: 'PROJ_SUPPLY_AUDIT',
       description: 'Re-align APAC warehouse node compliance indices.',
       budget: 450000.00,
-      spent: 120000.00,
+      actualCost: 120000.00,
       status: 'active',
       startDate: new Date('2026-04-01')
     }
@@ -159,9 +188,9 @@ async function main() {
   // 7. Seed Leads
   await prisma.lead.createMany({
     data: [
-      { tenantId: tenant.id, source: 'Inbound Web', company: 'Hyperion Logistics', estimatedValue: 142500.00, status: 'new', partition: 'SEC_ALPHA_01' },
-      { tenantId: tenant.id, source: 'API Partner', company: 'Synthax Systems', estimatedValue: 89000.00, status: 'qualified', partition: 'SEC_BETA_04' },
-      { tenantId: tenant.id, source: 'Direct Outreach', company: 'Vanguard Tech', estimatedValue: 210000.00, status: 'contacted', partition: 'SEC_ALPHA_09' }
+      { tenantId: tenant.id, source: 'Inbound Web', company: 'Hyperion Logistics', name: 'Alice Smith', email: 'alice@hyperion.com', status: 'new' },
+      { tenantId: tenant.id, source: 'API Partner', company: 'Synthax Systems', name: 'Bob Jones', email: 'bob@synthax.com', status: 'qualified' },
+      { tenantId: tenant.id, source: 'Direct Outreach', company: 'Vanguard Tech', name: 'Charlie Davis', email: 'charlie@vanguard.com', status: 'contacted' }
     ]
   });
   console.log('Seeded Leads ingestion rows.');

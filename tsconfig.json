@@ -16,7 +16,8 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./apps/web/*"],
+      "@/*": ["./apps/web/src/*"],
+      "@api/*": ["./apps/api/src/*"],
       "@packages/*": ["./packages/*"]
     }
   },

@@ -1,94 +1,99 @@
-// apps/api/src/app.module.ts
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaService } from './database/prisma.service';
-import { FinanceController } from './modules/finance/finance.controller';
-import { FinanceService } from './modules/finance/finance.service';
-import { HrController } from './modules/hr/hr.controller';
-import { HrService } from './modules/hr/hr.service';
-import { PayrollBatchProcessor } from './modules/payroll/payroll.processor';
-import { SupplyChainController } from './modules/supply-chain/supply-chain.controller';
-import { SupplyChainService } from './modules/supply-chain/supply-chain.service';
+
 import { AuthModule } from './modules/auth/auth.module';
-import { ForecastingModule } from './modules/forecasting/forecasting.module';
-import { AuditModule } from './modules/audit/audit.module';
-import { BiModule } from './modules/bi/bi.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { HrModule } from './modules/hr/hr.module';
+import { SupplyChainModule } from './modules/supply-chain/supply-chain.module';
 import { ProjectsModule } from './modules/projects/projects.module';
-import { HealthModule } from './health/health.module';
-import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
-import { RateLimiterMiddleware } from './common/middleware/rate-limiter.middleware';
+import { BiModule } from './modules/bi/bi.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ForecastingModule } from './modules/forecasting/forecasting.module';
+
+import { FinanceService } from './modules/finance/finance.service';
+import { InvoiceOcrService } from './modules/finance/invoice-ocr.service';
+import { HrService } from './modules/hr/hr.service';
+import { PayrollProcessor } from './modules/hr/payroll.processor';
+import { PayslipGeneratorService } from './modules/hr/payslip-generator.service';
+import { SupplyChainService } from './modules/supply-chain/supply-chain.service';
+import { ReorderMonitorService } from './modules/supply-chain/reorder-monitor.service';
+import { DagValidatorService } from './modules/projects/dag-validator';
+import { ForecastingService } from './modules/bi/forecasting.service';
+import { BiResolver } from './modules/bi/bi.resolver';
+import { AuditService } from './modules/audit/audit.service';
+
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { TenantMiddleware, SecurityHeadersMiddleware } from './common/middlewares/middlewares';
+import { TenantActivationMiddleware } from './common/middleware/tenant-activation.middleware';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    // ── Global Configuration ──────────────────────────────────────
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
-
-    // ── BullMQ Queue Infrastructure ──────────────────────────────
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: Number(process.env.REDIS_PORT) || 6379,
-      },
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: 'schema.gql',
+      path: '/graphql',
+      context: ({ req }: { req: any }) => ({ req }),
     }),
-    BullModule.registerQueue({
-      name: 'payroll-processing-matrix',
-    }),
-
-    // ── Feature Domain Modules ───────────────────────────────────
     AuthModule,
-    ForecastingModule,
-    AuditModule,
-    BiModule,
-    NotificationsModule,
+    FinanceModule,
+    HrModule,
+    SupplyChainModule,
     ProjectsModule,
-    HealthModule,
+    BiModule,
+    AuditModule,
+    NotificationsModule,
+    ForecastingModule,
   ],
-  controllers: [FinanceController, HrController, SupplyChainController],
   providers: [
     PrismaService,
     FinanceService,
+    InvoiceOcrService,
     HrService,
-    PayrollBatchProcessor,
+    // PayrollProcessor,
+    PayslipGeneratorService,
     SupplyChainService,
+    ReorderMonitorService,
+    DagValidatorService,
+    ForecastingService,
+    BiResolver,
+    AuditService,
     Reflector,
-
-    // ── Global JWT Auth Guard ──────────────────────────────────────
-    // Applied to all routes. Use @Public() decorator to exempt routes.
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    }
   ],
   exports: [PrismaService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // ── Security Headers (all routes) ─────────────────────────────
     consumer
       .apply(SecurityHeadersMiddleware)
       .forRoutes('*');
 
-    // ── Rate Limiting (all routes) ────────────────────────────────
     consumer
-      .apply(RateLimiterMiddleware)
-      .forRoutes('*');
-
-    // ── Tenant Context Injection (all routes) ─────────────────────
-    consumer
-      .apply((req: any, res: any, next: () => void) => {
-        const tenantId = req.headers['x-tenant-id'];
-        const userId = req.headers['x-user-id'];
-        (global as any).currentRequestContext = { tenantId, userId };
-        next();
-      })
+      .apply(TenantMiddleware, TenantActivationMiddleware)
       .forRoutes('*');
   }
 }

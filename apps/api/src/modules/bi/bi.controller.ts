@@ -1,9 +1,14 @@
 // apps/api/src/modules/bi/bi.controller.ts
-import { Controller, Get, Headers, Res, Logger } from '@nestjs/common';
+import { Controller, Get, Headers, Res, Logger, UseGuards } from '@nestjs/common';
 import { BiService } from './bi.service';
 import { Response } from 'express';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { RoleType } from '@prisma/client';
 
 @Controller('bi')
+@UseGuards(RolesGuard)
+@Roles(RoleType.SuperAdmin, RoleType.TenantAdmin)
 export class BiController {
   private readonly logger = new Logger(BiController.name);
 

@@ -1,75 +1,116 @@
-// apps/api/src/modules/supply-chain/supply-chain.service.ts
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class SupplyChainService {
-  // Idempotency token tracker for POs
-  private processedOrderTokens = new Set<string>();
+  private readonly logger = new Logger(SupplyChainService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  /**
-   * Registers a unique purchase order with strict cache-checked idempotency safety locks.
-   */
-  async commitPurchaseOrder(tenantId: string, creatorId: string, idempotencyToken: string, payload: any) {
-    if (!idempotencyToken) {
-      throw new BadRequestException('Missing mandatory structural tracking token [X-Idempotency-Key].');
-    }
+  async generatePurchaseOrder(tenantId: string, vendorId: string, items: { itemId: string; quantity: Decimal }[], idempotencyKey: string) {
+    this.logger.log(`Generating PO for vendor ${vendorId} in tenant ${tenantId}`);
 
-    const { vendorId, orderNumber, currency, items } = payload;
-    const trackingKey = `${tenantId}:${idempotencyToken}`;
+    return this.prisma.runInTenantContext(tenantId, async (tx) => {
+      let totalAmount = new Decimal(0);
+      const lines = [];
 
-    // Enforce idempotency protection checks
-    if (this.processedOrderTokens.has(trackingKey)) {
-      throw new ConflictException('Idempotency failure. Duplicate transaction payload intercepted.');
-    }
-
-    try {
-      const result = await this.prisma.$transaction(async (tx) => {
-        // Double check against structural code collisions inside database tracking partitions
-        const existingOrder = await tx.purchaseOrder.findFirst({
-          where: { tenantId: tenantId, orderNumber: orderNumber }
+      for (const item of items) {
+        const inventoryItem = await tx.inventoryItem.findUnique({
+          where: { id: item.itemId }
         });
+        if (!inventoryItem) throw new NotFoundException(`Item ${item.itemId} not found`);
 
-        if (existingOrder) {
-          throw new ConflictException(`Transaction aborted. Purchase Order identifier collision: ${orderNumber}`);
-        }
+        const totalPrice = inventoryItem.unitCost.mul(item.quantity);
+        totalAmount = totalAmount.plus(totalPrice);
 
-        let calculatedSubtotal = 0;
+        lines.push({
+          itemId: item.itemId,
+          qtyOrdered: item.quantity,
+          unitPrice: inventoryItem.unitCost,
+          totalPrice: totalPrice
+        });
+      }
 
-        // Verify tracking items against real-time multi-warehouse catalog records
-        for (const item of items) {
-          const product = await tx.inventoryItem.findUnique({
-            where: { id: item.itemId }
-          });
-
-          if (!product) throw new BadRequestException(`Catalog entry missing for targeted item: ${item.itemId}`);
-          calculatedSubtotal += Number(product.unitCost) * item.qtyOrdered;
-        }
-
-        const calculatedTax = calculatedSubtotal * 0.18;
-        const netAggregateTotal = calculatedSubtotal + calculatedTax;
-
-        // Create verified, immutable order record
-        return tx.purchaseOrder.create({
-          data: {
-            tenantId: tenantId,
-            vendorId: vendorId,
-            orderNumber: orderNumber,
-            totalAmount: netAggregateTotal,
-            status: 'pending_approval'
+      const po = await tx.purchaseOrder.create({
+        data: {
+          vendorId,
+          orderNumber: `PO-${Date.now()}`,
+          status: 'draft',
+          totalAmount,
+          currency: 'USD',
+          idempotencyKey,
+          lines: {
+            create: lines
           }
-        });
+        },
+        include: { lines: true }
       });
 
-      this.processedOrderTokens.add(trackingKey);
-      return result;
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        throw new ConflictException('Idempotency failure. Duplicate transaction payload intercepted.');
+      return po;
+    });
+  }
+
+  async createPurchaseRequisition(tenantId: string, requesterId: string, totalAmount: Decimal) {
+    return this.prisma.purchaseRequisition.create({
+      data: {
+        tenantId,
+        requesterId,
+        status: 'pending',
+        totalAmount
       }
-      throw error;
-    }
+    });
+  }
+
+  async processGoodsReceipt(tenantId: string, purchaseOrderId: string, receivedBy: string, receiptLines: { poLineId: string; quantityReceived: Decimal; unitCost: Decimal }[]) {
+    this.logger.log(`Processing Goods Receipt for PO ${purchaseOrderId}`);
+
+    return this.prisma.runInTenantContext(tenantId, async (tx) => {
+      // 1. Create Goods Receipt
+      const receipt = await tx.goodsReceipt.create({
+        data: {
+          purchaseOrderId,
+          receivedBy,
+        }
+      });
+
+      // 2. Create Receipt Lines and update stock
+      for (const line of receiptLines) {
+        await tx.receiptLine.create({
+          data: {
+            receiptId: receipt.id,
+            poLineId: line.poLineId,
+            quantityReceived: line.quantityReceived,
+            unitCost: line.unitCost
+          }
+        });
+
+        // Get Item ID from PO line
+        const poLine = await tx.purchaseOrderLine.findUnique({
+          where: { id: line.poLineId }
+        });
+
+        if (poLine) {
+          // Track movement
+          await tx.stockMovement.create({
+            data: {
+              itemId: poLine.itemId,
+              warehouseId: 'DEFAULT_WH_ID', // In real app, passed in args
+              quantity: line.quantityReceived,
+              type: 'in',
+              reference: `GR-${receipt.id}`
+            }
+          });
+        }
+      }
+
+      // 3. Update PO status
+      await tx.purchaseOrder.update({
+        where: { id: purchaseOrderId },
+        data: { status: 'received' }
+      });
+
+      return receipt;
+    });
   }
 }

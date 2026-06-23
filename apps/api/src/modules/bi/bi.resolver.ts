@@ -1,49 +1,30 @@
-// apps/api/src/modules/bi/bi.resolver.ts
-import { Resolver, Query, Args } from '@nestjs/graphql';
-import { BiService } from './bi.service';
-import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
+import { Resolver, Query, Args, Context } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PrismaService } from '../../database/prisma.service';
+import { ForecastingService } from './forecasting.service';
 
-@ObjectType()
-export class TransactionVelocity {
-  @Field()
-  hour: string;
-
-  @Field(() => Int)
-  tps: number;
-}
-
-@ObjectType()
-export class AssetAllocation {
-  @Field(() => Float)
-  infrastructure: number;
-
-  @Field(() => Float)
-  aiLiquidity: number;
-
-  @Field(() => Float)
-  other: number;
-}
-
-@ObjectType()
-export class BiAnalytics {
-  @Field(() => [TransactionVelocity])
-  transactionVelocity: TransactionVelocity[];
-
-  @Field(() => AssetAllocation)
-  assetAllocation: AssetAllocation;
-
-  @Field(() => Int)
-  systemScore: number;
-}
-
-@Resolver(() => BiAnalytics)
+@Resolver()
+@UseGuards(JwtAuthGuard)
 export class BiResolver {
-  constructor(private readonly biService: BiService) {}
+  constructor(
+    private prisma: PrismaService,
+    private forecasting: ForecastingService
+  ) {}
 
-  @Query(() => BiAnalytics, { name: 'readIsolatedAnalytics' })
-  async getReadIsolatedAnalytics(
-    @Args('tenantId') tenantId: string,
-  ): Promise<BiAnalytics> {
-    return this.biService.getReadIsolatedAnalytics(tenantId);
+  @Query(() => String)
+  async getDashboardWidgets(@Context() context: any) {
+    const tenantId = context.req.tenantId;
+    return this.prisma.runInTenantContext(tenantId, async (tx) => {
+      const widgets = await tx.dashboardWidget.findMany();
+      return JSON.stringify(widgets);
+    });
+  }
+
+  @Query(() => String)
+  async getRevenueForecast(@Context() context: any, @Args('periods') periods: number) {
+    const tenantId = context.req.tenantId;
+    const forecast = await this.forecasting.forecastRevenue(tenantId, periods);
+    return JSON.stringify(forecast);
   }
 }

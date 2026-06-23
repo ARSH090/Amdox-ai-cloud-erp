@@ -6,16 +6,19 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { SanitizationPipe } from './common/pipes/sanitization.pipe';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const logger = new Logger('AMDOX-API');
-  const port = process.env.PORT || 3000;
+  const port = process.env.API_PORT || 3001;
   const isProduction = process.env.NODE_ENV === 'production';
 
   const app = await NestFactory.create(AppModule, {
     // Disable Express default X-Powered-By header
     logger: isProduction ? ['error', 'warn', 'log'] : ['error', 'warn', 'log', 'debug', 'verbose'],
   });
+
+  app.use(cookieParser());
 
   // ── Global Prefix ──────────────────────────────────────────────────
   app.setGlobalPrefix('api/v1', {

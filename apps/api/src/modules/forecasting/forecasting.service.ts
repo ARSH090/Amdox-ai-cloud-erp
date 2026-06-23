@@ -19,18 +19,12 @@ export class ForecastingService {
   /**
    * Get demand predictions from FastAPI Prophet microservice
    */
-  async getSkuForecast(sku: string, horizonDays: number = 90, historicalData: any[]): Promise<any> {
+  async getSkuForecast(tenantId: string, sku: string, horizonDays: number = 30, historicalData: any[]): Promise<any> {
     try {
-      this.logger.log(`Requesting AI demand forecast from FastAPI for SKU: ${sku} (Horizon: ${horizonDays} days)`);
+      this.logger.log(`Requesting AI demand forecast from FastAPI for SKU: ${sku} in tenant: ${tenantId}`);
       
-      const payload = {
-        sku,
-        horizon_days: horizonDays,
-        historical_data: historicalData,
-      };
-
       const response = await firstValueFrom(
-        this.httpService.post(`${this.mlServiceUrl}/predict`, payload)
+        this.httpService.get(`${this.mlServiceUrl}/predict/${tenantId}/${sku}?days=${horizonDays}`)
       );
 
       return response.data;
@@ -56,12 +50,17 @@ export class ForecastingService {
   /**
    * Trigger Prophet training cycle on weekly interval
    */
-  async triggerSkuTraining(sku: string, dataset: any[]): Promise<any> {
+  async triggerSkuTraining(tenantId: string, sku: string, dataset: any[]): Promise<any> {
     try {
-      this.logger.log(`Initiating weekly Prophet training run for SKU: ${sku}`);
+      this.logger.log(`Initiating weekly Prophet training run for SKU: ${sku} in tenant ${tenantId}`);
       
       const response = await firstValueFrom(
-        this.httpService.post(`${this.mlServiceUrl}/train`, { sku, dataset })
+        this.httpService.post(`${this.mlServiceUrl}/train/${tenantId}/${sku}`, {
+          tenantId,
+          itemId: sku,
+          history: dataset,
+          daysToPredict: 30
+        })
       );
 
       return response.data;

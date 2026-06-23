@@ -1,9 +1,14 @@
 // apps/api/src/modules/audit/audit.controller.ts
-import { Controller, Post, Body, Get, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Get, Logger, UseGuards } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { GdprService } from './gdpr.service';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { RoleType } from '@prisma/client';
 
 @Controller('audit')
+@UseGuards(RolesGuard)
+@Roles(RoleType.SuperAdmin, RoleType.TenantAdmin)
 export class AuditController {
   private readonly logger = new Logger(AuditController.name);
 
@@ -21,7 +26,7 @@ export class AuditController {
     @Body() body: { payload: string; tenantId?: string },
   ): Promise<Record<string, unknown>> {
     this.logger.log(`Appending audit log entry for tenant: ${body.tenantId || 'system'}`);
-    return this.auditService.createAuditEntry(body.payload, body.tenantId);
+    return this.auditService.createAuditEntry(body.tenantId || 'sys', 'system', 'log', 'System', '0', body.payload);
   }
 
   /**
@@ -30,7 +35,7 @@ export class AuditController {
    */
   @Get('verify')
   async verifyIntegrity(): Promise<Record<string, unknown>> {
-    const isValid = await this.auditService.verifyChainIntegrity();
+    const isValid = await this.auditService.verifyChainIntegrity('system');
     return {
       status: isValid ? 'CHAIN_INTEGRITY_OK' : 'CHAIN_TAMPER_DETECTED',
       verified_at: new Date().toISOString(),
@@ -49,7 +54,7 @@ export class AuditController {
     return this.gdprService.executeErasureRequest(
       body.tenantId,
       body.employeeId,
-      body.isDryRun ?? false,
+      body.isDryRun ?? false
     );
   }
 }

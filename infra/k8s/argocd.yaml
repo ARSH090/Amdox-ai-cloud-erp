@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: amdox-erp
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/Amdox-Corp/amdox-ai-cloud-erp.git'
+    targetRevision: main
+    path: infra/helm/amdox-erp
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: amdox-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

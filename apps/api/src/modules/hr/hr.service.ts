@@ -1,67 +1,71 @@
-// apps/api/src/modules/hr/hr.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class HrService {
-  constructor(
-    private readonly prisma: PrismaService,
-    @InjectQueue('payroll-processing-matrix') private readonly payrollQueue: Queue
-  ) {}
+  private readonly logger = new Logger(HrService.name);
 
-  async retrieveWorkforceRegistry(tenantId: string) {
+  constructor(private prisma: PrismaService) {}
+
+  async getOrgChart(tenantId: string, departmentId: string) {
+    this.logger.log(`Fetching org chart for department ${departmentId} in tenant ${tenantId}`);
+    
+    // Recursive CTE to fetch hierarchical employee structures
+    const orgChart = await this.prisma.$queryRaw`
+      WITH RECURSIVE OrgChart AS (
+        SELECT 
+          id, 
+          "employeeNumber", 
+          "fullName", 
+          "jobTitle", 
+          "managerId", 
+          "departmentId",
+          1 as level
+        FROM "Employee"
+        WHERE "departmentId" = ${departmentId}::uuid AND "managerId" IS NULL AND "tenantId" = ${tenantId}::uuid
+        
+        UNION ALL
+        
+        SELECT 
+          e.id, 
+          e."employeeNumber", 
+          e."fullName", 
+          e."jobTitle", 
+          e."managerId", 
+          e."departmentId",
+          o.level + 1
+        FROM "Employee" e
+        INNER JOIN OrgChart o ON e."managerId" = o.id
+        WHERE e."tenantId" = ${tenantId}::uuid
+      )
+      SELECT * FROM OrgChart ORDER BY level, "fullName";
+    `;
+
+    return orgChart;
+  }
+
+  async getEmployees() {
     return this.prisma.employee.findMany({
-      where: { tenantId: tenantId, deletedAt: null }
+      where: { isActive: true },
     });
   }
 
-  /**
-   * Orchestrates high-volume parallel payroll processing queues via BullMQ.
-   */
-  async dispatchBulkPayrollRun(tenantId: string, initiatorId: string, payload: any) {
-    const { periodName, startDate, endDate } = payload;
-
-    // 1. Initialize master execution tracking header record
-    const payrollRun = await this.prisma.payrollRun.create({
-      data: {
-        tenantId: tenantId,
-        periodName: periodName,
-        periodStart: new Date(startDate),
-        periodEnd: new Date(endDate),
-        status: 'processing',
-        initiatedBy: initiatorId,
-      }
+  async createEmployee(data: any) {
+    return this.prisma.employee.create({
+      data,
     });
+  }
 
-    // 2. Extract active workforce records for the processing tenant partition
-    const activeStaff = await this.prisma.employee.findMany({
-      where: { tenantId: tenantId, isActive: true, deletedAt: null },
-      select: { id: true }
+  async getLeaveRequests(employeeId?: string) {
+    const where = employeeId ? { employeeId } : {};
+    return this.prisma.leaveRequest.findMany({
+      where,
     });
+  }
 
-    // 3. Push items concurrently into the Redis execution queue cluster
-    const jobs = activeStaff.map((staff) => ({
-      name: 'execute-salary-calculation-node',
-      data: {
-        tenantId,
-        payrollRunId: payrollRun.id,
-        employeeId: staff.id
-      },
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-        removeOnComplete: true
-      }
-    }));
-
-    await this.payrollQueue.addBulk(jobs);
-
-    return {
-      message: 'Bulk execution run successfully dispatched across processing clusters.',
-      batchTrackingId: payrollRun.id,
-      recordsQueuedCount: activeStaff.length
-    };
+  async createLeaveRequest(data: any) {
+    return this.prisma.leaveRequest.create({
+      data,
+    });
   }
 }

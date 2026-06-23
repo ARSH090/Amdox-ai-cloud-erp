@@ -1,7 +1,7 @@
 // apps/api/src/health/health.controller.ts
 import { Controller, Get, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { Public } from '../common/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';

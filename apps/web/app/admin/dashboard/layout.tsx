@@ -1,141 +1,86 @@
-// apps/web/app/admin/dashboard/layout.tsx
-"use client";
+import Link from 'next/link'
 
-import React, { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
+interface AdminLayoutProps {
+  children: React.ReactNode
+}
 
-export default function DashboardLayout({
-  children,
+export const metadata = {
+  title: 'AMDOX ERP Dashboard',
+  description: 'Advanced ERP system with Finance, HR, and Supply Chain modules',
+}
+
+function NavLink({
+  href,
+  label,
+  icon,
 }: {
-  children: React.ReactNode;
+  href: string
+  label: string
+  icon: string
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-foreground hover:text-primary"
+    >
+      <span className="text-lg">{icon}</span>
+      <span className="font-medium">{label}</span>
+    </Link>
+  )
+}
 
-  useEffect(() => {
-    // Session Auth Guard check
-    const user = localStorage.getItem("amdox_current_user");
-    if (!user) {
-      router.push("/admin/login");
-    } else {
-      setIsAuthenticated(true);
-    }
-  }, [router]);
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <div className="w-64 border-r border-border bg-card flex flex-col">
+        <div className="p-6 border-b border-border">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Amdox Logo" className="h-10 w-10 object-cover rounded-xl shadow-sm border border-border/50" />
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Amdox</h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 font-medium uppercase tracking-wider">Enterprise ERP</p>
+        </div>
 
-  if (!isAuthenticated) {
-    // Show slow pulsing layout skeleton CLS shield
-    return (
-      <div className="min-h-screen bg-[#030712] flex items-center justify-center">
-        <div className="space-y-4 w-64 animate-pulse">
-          <div className="h-4 bg-white/10 rounded w-3/4"></div>
-          <div className="h-4 bg-white/10 rounded w-1/2"></div>
-          <div className="h-10 bg-white/10 rounded"></div>
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-muted-foreground uppercase px-4 mb-3">
+              ERP Modules
+            </p>
+            <NavLink href="/admin/dashboard/finance" label="Finance" icon="💰" />
+            <NavLink href="/admin/dashboard/hr" label="Human Resources" icon="👥" />
+            <NavLink
+              href="/admin/dashboard/supply-chain"
+              label="Supply Chain"
+              icon="🚚"
+            />
+          </div>
+
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase px-4 mb-3">
+              Admin
+            </p>
+            <NavLink href="/admin/dashboard/users" label="Users & Roles" icon="👨‍💼" />
+            <NavLink href="/admin/dashboard/audit" label="Audit Logs" icon="📝" />
+            <NavLink href="/admin/dashboard/settings" label="Settings" icon="⚙️" />
+          </div>
+        </nav>
+
+        <div className="p-4 border-t border-border">
+          <div className="text-xs text-muted-foreground">
+            <p>System Status</p>
+            <p className="text-green-400 font-semibold mt-1">✓ Online</p>
+          </div>
         </div>
       </div>
-    );
-  }
 
-  const navLinks = [
-    { name: "Overview", path: "/admin/dashboard", icon: "dashboard" },
-    { name: "Finance Ledger", path: "/admin/dashboard/finance", icon: "account_balance_wallet" },
-    { name: "HR & Payroll", path: "/admin/dashboard/hr", icon: "groups" },
-    { name: "Supply Chain", path: "/admin/dashboard/supply-chain", icon: "inventory_2" }
-  ];
-
-  return (
-    <div className="min-h-screen flex bg-[#030712]">
-      {/* Sidebar Panel */}
-      <aside
-        className={`bg-[#080e1a] border-r border-white/5 flex flex-col justify-between py-6 px-4 transition-fluid fixed left-0 top-0 h-full z-30 ${
-          sidebarCollapsed ? "w-20" : "w-72"
-        }`}
-      >
-        <div>
-          {/* Brand */}
-          <div className="mb-10 flex justify-between items-center px-2">
-            {!sidebarCollapsed && (
-              <div>
-                <h2 className="text-xs font-mono font-bold text-[#C0C1FF] tracking-wider mb-1">AMDOX ERP</h2>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse"></span>
-                  <span className="text-[10px] font-mono text-white/60">[SYS: ACTIVE]</span>
-                </div>
-              </div>
-            )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="text-[#918fa1] hover:text-white p-1 rounded hover:bg-white/5"
-            >
-              <span className="material-symbols-outlined text-sm">
-                {sidebarCollapsed ? "menu" : "menu_open"}
-              </span>
-            </button>
-          </div>
-
-          {/* Links */}
-          <nav className="space-y-2">
-            {navLinks.map((link) => {
-              const active = pathname === link.path;
-              return (
-                <Link
-                  key={link.path}
-                  href={link.path}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-fluid font-mono text-xs ${
-                    active
-                      ? "bg-[#4F46E5] text-white font-bold"
-                      : "text-[#918fa1] hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm">{link.icon}</span>
-                  {!sidebarCollapsed && <span>{link.name}</span>}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Back Link */}
-        <div className="border-t border-white/5 pt-4">
-          <Link
-            href="/"
-            className="flex items-center gap-3 p-3 text-xs text-[#918fa1] hover:bg-white/5 hover:text-white rounded-lg transition-fluid font-mono"
-          >
-            <span className="material-symbols-outlined text-sm">logout</span>
-            {!sidebarCollapsed && <span>Exit Portal</span>}
-          </Link>
-        </div>
-      </aside>
-
-      {/* Main Container */}
-      <div
-        className={`flex-1 flex flex-col min-h-screen transition-fluid ${
-          sidebarCollapsed ? "pl-20" : "pl-72"
-        }`}
-      >
-        {/* Header Bar */}
-        <header className="h-16 border-b border-white/5 bg-[#030712]/80 backdrop-blur-md px-8 flex justify-between items-center sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-[#918fa1]">/admin/dashboard</span>
-            <span className="text-[10px] font-mono text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/20 uppercase">
-              US-EAST-01
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-mono text-[#918fa1]">
-            <span>Platform Admin</span>
-            <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/5">
-              <div className="w-full h-full bg-gradient-to-br from-[#4F46E5] to-[#10B981]"></div>
-            </div>
-          </div>
-        </header>
-
-        {/* Child Views Canvas */}
-        <main className="p-8 flex-1">
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
           {children}
-        </main>
+        </div>
       </div>
     </div>
-  );
+  )
 }

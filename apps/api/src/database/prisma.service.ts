@@ -1,67 +1,45 @@
-// apps/api/src/database/prisma.service.ts
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { createTenantExtension } from './prisma.extension';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor() {
-    super({
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'stdout', level: 'error' },
-        { emit: 'stdout', level: 'warn' },
-      ],
-    });
-  }
+  // Extend Prisma Client with the custom extension for tenant isolation
+  public extendedClient = this.$extends(createTenantExtension());
 
   async onModuleInit() {
+    this.logger.log('Initializing Prisma Client...');
     try {
       await this.$connect();
-      this.logger.log('Database transmission channels successfully synchronized via Prisma Engine.');
-    } catch (e: any) {
-      this.logger.warn(`Database connection failed: ${e.message}. Starting in offline/resilient fallback mode.`);
+    } catch (e) {
+      this.logger.warn('Failed to connect to Prisma Client. The database server may be offline.');
     }
-    this.registerTenantIsolationMiddleware();
   }
 
   async onModuleDestroy() {
-    try {
-      await this.$disconnect();
-    } catch (e) {
-      // Ignored
-    }
+    this.logger.log('Disconnecting Prisma Client...');
+    await this.$disconnect();
   }
 
   /**
-   * Enterprise Multi-Tenant Query Isolation Middleware.
-   * Intercepts incoming queries to inject current tenant constraints.
+   * Executes a transaction wrapped with Postgres RLS context activation.
+   * Runs: SELECT set_config('app.current_tenant_id', tenantId, true)
    */
-  private registerTenantIsolationMiddleware() {
-    this.$use(async (params, next) => {
-      // Access application context parameters injected by TenantContextMiddleware
-      // Maps directly to global execution contexts
-      const globalContext = (global as any).currentRequestContext;
-      const tenantId = globalContext?.tenantId;
-
-      const isolatedModels = ['User', 'Account', 'JournalEntry', 'Employee', 'Project', 'Lead'];
-
-      if (tenantId && params.model && isolatedModels.includes(params.model)) {
-        // Enforce strict multi-tenant boundary parameters across read scopes
-        if (['findUnique', 'findFirst', 'findMany', 'count'].includes(params.action)) {
-          params.args = params.args || {};
-          params.args.where = { ...params.args.where, tenantId: tenantId };
-        }
-
-        // Enforce data containment constraints on mutating database updates
-        if (['update', 'updateMany', 'upsert', 'delete', 'deleteMany'].includes(params.action)) {
-          params.args = params.args || {};
-          params.args.where = { ...params.args.where, tenantId: tenantId };
-        }
-      }
-
-      return next(params);
+  async runInTenantContext<T>(
+    tenantId: string,
+    fn: (tx: any) => Promise<T>,
+  ): Promise<T> {
+    return this.$transaction(async (tx) => {
+      // Set the current_tenant_id for Row-Level Security
+      await tx.$executeRawUnsafe(
+        `SELECT set_config('app.current_tenant_id', $1, true)`,
+        tenantId,
+      );
+      
+      // Execute the provided function within the transaction context
+      return await fn(tx);
     });
   }
 }

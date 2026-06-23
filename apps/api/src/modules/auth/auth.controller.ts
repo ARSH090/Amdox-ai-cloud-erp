@@ -1,49 +1,95 @@
 // apps/api/src/modules/auth/auth.controller.ts
-import { Controller, Post, Body, Get, Headers, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Controller, Post, Get, Body, Req, Res, HttpStatus } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { AuthService, LoginDto } from './auth.service';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
-
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * POST /auth/token-exchange
-   * Exchange an OIDC authorization code for an access token.
-   */
-  @Post('token-exchange')
-  async tokenExchange(
-    @Body() body: { code: string; redirect_uri: string },
-  ): Promise<Record<string, unknown>> {
-    if (!body.code) {
-      throw new HttpException('Missing authorization code', HttpStatus.BAD_REQUEST);
-    }
+  @Public()
+  @Post('login')
+  async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const tokens = await this.authService.login(body.email, body.password, body.tenantId);
+    
+    // Set httpOnly cookie
+    res.cookie('access_token', tokens.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: tokens.expires_in * 1000,
+    });
 
-    this.logger.log(`Processing OIDC token exchange request for redirect: ${body.redirect_uri}`);
-    return this.authService.exchangeCodeForToken(body.code, body.redirect_uri);
+    res.cookie('refresh_token', tokens.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    return { success: true, message: 'Logged in successfully' };
   }
 
-  /**
-   * GET /auth/me
-   * Validate and return current user profile from bearer token.
-   */
-  @Get('me')
-  async getCurrentUser(
-    @Headers('authorization') authHeader: string,
-  ): Promise<Record<string, unknown>> {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new HttpException('Missing or malformed Authorization header', HttpStatus.UNAUTHORIZED);
+  @Public()
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies['refresh_token'];
+    if (!refreshToken) {
+      res.status(HttpStatus.UNAUTHORIZED).send({ success: false, message: 'No refresh token provided' });
+      return;
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const payload = await this.authService.validateToken(token);
+    const tokens = await this.authService.refreshToken(refreshToken);
+    
+    res.cookie('access_token', tokens.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: tokens.expires_in * 1000,
+    });
 
-    return {
-      id: payload.sub,
-      email: payload.email,
-      tenant_id: payload.tenant_id,
-      roles: payload.roles,
-    };
+    res.cookie('refresh_token', tokens.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return { success: true, message: 'Token refreshed' };
+  }
+
+  @Post('logout')
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies['refresh_token'];
+    const userId = (req as any).user?.userId;
+    
+    await this.authService.logout(userId, refreshToken);
+
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+
+    return { success: true, message: 'Logged out successfully' };
+  }
+
+  @Post('mfa/verify')
+  async verifyMfa(@Req() req: Request, @Body('code') code: string) {
+    const userId = (req as any).user?.userId;
+    const isValid = await this.authService.verifyMfa(userId, code);
+    
+    if (!isValid) {
+      return { success: false, message: 'Invalid MFA code' };
+    }
+    return { success: true, message: 'MFA verified' };
+  }
+
+  @Get('session')
+  async getSession(@Req() req: Request) {
+    const accessToken = req.cookies['access_token'];
+    if (!accessToken) {
+      return { success: false, message: 'No session' };
+    }
+    const session = await this.authService.getSession(accessToken);
+    return { success: true, session };
   }
 }

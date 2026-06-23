@@ -20,3 +20,4 @@ allowBuilds:
   sharp: true
   prisma: true
   msgpackr-extract: true
+  unrs-resolver: set this to true or false

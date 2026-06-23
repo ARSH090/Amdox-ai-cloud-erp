@@ -76,13 +76,13 @@ export class ExchangeRateService {
       // Step 1: Fetch rates from ECB (EUR-based)
       const ecbRates = await this.fetchECBRates();
 
-      // Step 2: Store in database for all active tenants
-      const tenants = await this.prisma.tenant.findMany({
-        where: { isActive: true },
-        select: { id: true },
+      // 2. Identify active tenants with cross-currency configurations
+      const activeTenants = await this.prisma.tenant.findMany({
+        where: { status: 'ACTIVE' },
+        select: { id: true, settings: true }
       });
 
-      for (const tenant of tenants) {
+      for (const tenant of activeTenants) {
         for (const [targetCurrency, rate] of Object.entries(ecbRates)) {
           await this.storeExchangeRate(tenant.id, {
             baseCurrency: 'EUR',
@@ -208,22 +208,9 @@ export class ExchangeRateService {
     rateDto: ExchangeRateDto,
   ): Promise<void> {
     try {
-      // Upsert to avoid duplicates for same date
-      await this.prisma.exchangeRate.upsert({
-        where: {
-          // Composite unique constraint
-          tenantId_baseCurrency_targetCurrency_rateDate: {
-            tenantId,
-            baseCurrency: rateDto.baseCurrency,
-            targetCurrency: rateDto.targetCurrency,
-            rateDate: new Date(rateDto.rateDate.toDateString()), // Normalize to date only
-          },
-        },
-        update: {
-          rate: rateDto.rate,
-          source: rateDto.source,
-        },
-        create: {
+      // Fallback to simple create instead of upsert due to missing unique constraint
+      await this.prisma.exchangeRate.create({
+        data: {
           tenantId,
           baseCurrency: rateDto.baseCurrency,
           targetCurrency: rateDto.targetCurrency,
